@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Outfit Manager{% endblock %}</title>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    <!-- Custom CSS blocks -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gradient">
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="header-title">
+                <span class="icon">👗</span>
+                Outfit Manager
+            </h1>
+            
+            <!-- Main Navigation -->
+            <nav class="main-nav">
+                <a href="/outfits" class="nav-btn" 
+                   hx-get="/outfits" 
+                   hx-target="#main-content" 
+                   hx-push-url="true">
+                    <span class="nav-icon">👕</span>
+                    Outfits
+                </a>
+                <a href="/components" class="nav-btn"
+                   hx-get="/components" 
+                   hx-target="#main-content" 
+                   hx-push-url="true">
+                    <span class="nav-icon">🧥</span>
+                    Components
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content">
+        {% block content %}
+        <!-- Default home content -->
+        <div class="welcome-screen">
+            <div class="welcome-content">
+                <h2>Welcome to Outfit Manager</h2>
+                <p>Organize your wardrobe and create amazing outfits!</p>
+                <div class="quick-actions">
+                    <a href="/outfits" class="btn btn-primary btn-large" 
+                       hx-get="/outfits" hx-target="#main-content" hx-push-url="true">
+                        View Outfits
+                    </a>
+                    <a href="/components" class="btn btn-secondary btn-large"
+                       hx-get="/components" hx-target="#main-content" hx-push-url="true">
+                        View Components
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/outfits/new" class="bottom-nav-btn" 
+           hx-get="/outfits/new" 
+           hx-target="#main-content" 
+           hx-push-url="true">
+            <span class="bottom-nav-icon">➕</span>
+            <span class="bottom-nav-label">Add Outfit</span>
+        </a>
+        
+        <a href="/components/new" class="bottom-nav-btn"
+           hx-get="/components/new"
+           hx-target="#main-content"
+           hx-push-url="true">
+            <span class="bottom-nav-icon">🔧</span>
+            <span class="bottom-nav-label">Add Component</span>
+        </a>
+        
+        <a href="/vendors/new" class="bottom-nav-btn"
+           hx-get="/vendors/new"
+           hx-target="#main-content"
+           hx-push-url="true">
+            <span class="bottom-nav-icon">🏪</span>
+            <span class="bottom-nav-label">Add Vendor</span>
+        </a>
+    </nav>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="spinner"></div>
+        <span>Loading...</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/main.js"></script>
+    
+    <!-- HTMX Event Handlers -->
+    <script>
+        // Show loading indicator on HTMX requests
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            document.getElementById('loading-indicator').style.display = 'flex';
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            document.getElementById('loading-indicator').style.display = 'none';
+        });
+        
+        // Handle HTMX errors
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            if (window.showToast) {
+                showToast('Error: ' + evt.detail.xhr.statusText, 'error');
+            }
+        });
+        
+        // Update navigation active states
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            updateNavigation();
+        });
+        
+        function updateNavigation() {
+            // Update active nav states based on current content
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            
+            const path = window.location.pathname;
+            if (path.startsWith('/outfits')) {
+                document.querySelector('[href="/outfits"]').classList.add('active');
+            } else if (path.startsWith('/components')) {
+                document.querySelector('[href="/components"]').classList.add('active');
+            }
+        }
+        
+        // Initialize navigation on page load
+        document.addEventListener('DOMContentLoaded', updateNavigation);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

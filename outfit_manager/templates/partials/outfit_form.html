@@ -1,0 +1,75 @@
+<div class="form">
+    <h2 class="form-title">
+        {% if is_edit %}Edit Outfit{% else %}New Outfit{% endif %}
+    </h2>
+    
+    <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-on="htmx:afterRequest: hideModal(); showToast('Outfit saved successfully!')">
+        
+        <div class="form-group">
+            <label for="outfit-name" class="form-label">Outfit Name *</label>
+            <input type="text" 
+                   id="outfit-name" 
+                   name="name" 
+                   class="form-input" 
+                   value="{% if outfit %}{{ outfit.name }}{% endif %}" 
+                   required>
+        </div>
+        
+        <div class="form-group">
+            <label for="outfit-description" class="form-label">Description</label>
+            <textarea id="outfit-description" 
+                      name="description" 
+                      class="form-textarea" 
+                      placeholder="Describe this outfit...">{% if outfit %}{{ outfit.description or '' }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="outfit-vendor" class="form-label">Primary Vendor</label>
+            <select id="outfit-vendor" name="vendorid" class="form-select">
+                <option value="">Select vendor...</option>
+                {% for vendor in vendors %}
+                <option value="{{ vendor.venid }}" 
+                        {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
+                    {{ vendor.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Status</label>
+            <div class="radio-group">
+                <label class="radio-option {% if not outfit or outfit.active %}selected{% endif %}">
+                    <input type="radio" name="active" value="true" 
+                           {% if not outfit or outfit.active %}checked{% endif %}>
+                    <span>Active</span>
+                </label>
+                <label class="radio-option {% if outfit and not outfit.active %}selected{% endif %}">
+                    <input type="radio" name="active" value="false" 
+                           {% if outfit and not outfit.active %}checked{% endif %}>
+                    <span>Retired</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="outfit-notes" class="form-label">Notes</label>
+            <textarea id="outfit-notes" 
+                      name="notes" 
+                      class="form-textarea" 
+                      placeholder="Additional notes...">{% if outfit %}{{ outfit.notes or '' }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideModal()">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if is_edit %}Update Outfit{% else %}Create Outfit{% endif %}
+            </button>
+        </div>
+    </form>
+</div>

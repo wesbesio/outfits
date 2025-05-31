@@ -1,0 +1,54 @@
+<div class="form">
+    <h2 class="form-title">
+        {% if is_edit %}Edit Vendor{% else %}New Vendor{% endif %}
+    </h2>
+    
+    <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/vendors{% if is_edit %}/{{ vendor.venid }}{% endif %}"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-on="htmx:afterRequest: hideModal(); showToast('Vendor saved successfully!')">
+        
+        <div class="form-group">
+            <label for="vendor-name" class="form-label">Vendor Name *</label>
+            <input type="text" 
+                   id="vendor-name" 
+                   name="name" 
+                   class="form-input" 
+                   value="{% if vendor %}{{ vendor.name }}{% endif %}" 
+                   required>
+        </div>
+        
+        <div class="form-group">
+            <label for="vendor-description" class="form-label">Description</label>
+            <textarea id="vendor-description" 
+                      name="description" 
+                      class="form-textarea" 
+                      placeholder="Describe this vendor...">{% if vendor %}{{ vendor.description or '' }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Status</label>
+            <div class="radio-group">
+                <label class="radio-option {% if not vendor or vendor.active %}selected{% endif %}">
+                    <input type="radio" name="active" value="true" 
+                           {% if not vendor or vendor.active %}checked{% endif %}>
+                    <span>Active</span>
+                </label>
+                <label class="radio-option {% if vendor and not vendor.active %}selected{% endif %}">
+                    <input type="radio" name="active" value="false" 
+                           {% if vendor and not vendor.active %}checked{% endif %}>
+                    <span>Inactive</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideModal()">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if is_edit %}Update Vendor{% else %}Create Vendor{% endif %}
+            </button>
+        </div>
+    </form>
+</div>

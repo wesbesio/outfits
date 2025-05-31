@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Outfits - Outfit Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <h2 class="page-title">Your Outfits</h2>
+        <div class="page-actions">
+            <button class="btn btn-primary" 
+                    hx-get="/forms/new-outfit" 
+                    hx-target="#modal-container .modal-content"
+                    onclick="showModal()">
+                <span>➕</span> New Outfit
+            </button>
+        </div>
+    </div>
+
+    <!-- Sort and Filter Options -->
+    <div class="controls-bar">
+        <div class="sort-options">
+            <label for="sort-by" class="control-label">Sort by:</label>
+            <select id="sort-by" class="form-select" 
+                    hx-get="/api/outfits" 
+                    hx-target="#outfits-grid"
+                    hx-include="[name='filter-active']">
+                <option value="name">Name</option>
+                <option value="cost">Total Cost</option>
+                <option value="created">Date Created</option>
+                <option value="modified">Last Modified</option>
+            </select>
+        </div>
+        
+        <div class="filter-options">
+            <label class="control-label">
+                <input type="checkbox" name="filter-active" value="true" checked
+                       hx-get="/api/outfits" 
+                       hx-target="#outfits-grid"
+                       hx-include="[name='sort-by']">
+                Active Only
+            </label>
+        </div>
+    </div>
+
+    <!-- Outfits Grid -->
+    <div id="outfits-grid" 
+         hx-get="/api/outfits" 
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML"
+         hx-headers='{"Accept": "text/html"}'>
+        <!-- Loading state -->
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading outfits...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Outfit Card Template (for HTMX responses) -->
+<template id="outfit-card-template">
+    <div class="card outfit-card" 
+         hx-get="/outfits/{outfit_id}" 
+         hx-target="#main-content" 
+         hx-push-url="true"
+         data-outfit-id="{outfit_id}">
+        
+        <div class="card-image">
+            <!-- Dynamic image or placeholder -->
+            <div class="card-image-placeholder" id="outfit-image-{outfit_id}">
+                👗
+            </div>
+        </div>
+        
+        <div class="card-content">
+            <h3 class="card-title">{outfit_name}</h3>
+            
+            <div class="outfit-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Components:</span>
+                    <span class="stat-value">{component_count}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Cost:</span>
+                    <span class="stat-value card-price">${calculated_cost}</span>
+                </div>
+            </div>
+            
+            <div class="card-meta">
+                <span class="card-badge {status_class}">{status_text}</span>
+                <span class="card-date">{created_date}</span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg) 0;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.page-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.sort-options,
+.filter-options {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.control-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.outfit-stats {
+    display: flex;
+    justify-content: space-between;
+    margin: var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-value {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+}
+
+.outfit-card:hover {
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        text-align: center;
+    }
+    
+    .controls-bar {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .outfit-stats {
+        justify-content: space-around;
+    }
+}
+</style>
+{% endblock %}

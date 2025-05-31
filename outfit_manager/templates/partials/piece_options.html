@@ -1,0 +1,4 @@
+<option value="">Select piece type...</option>
+{% for piece in pieces %}
+<option value="{{ piece.piecid }}">{{ piece.name }}</option>
+{% endfor %}
