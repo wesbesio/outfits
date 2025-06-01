@@ -1,6 +1,5 @@
-{% extends "base.html" %}
-
-{% block title %}{{ page_title }} - Outfit Manager{% endblock %}
+<!-- File: templates/forms/vendor_form_content.html -->
+<!-- Content-only template for HTMX requests -->
 
 {% block content %}
 <div class="container">
@@ -99,78 +98,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.vendor-info-box {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #E0E7FF 100%);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    margin: var(--spacing-lg) 0;
-    border-left: 4px solid var(--primary-color);
-}
-
-.vendor-info-box h3 {
-    color: var(--primary-color);
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-}
-
-.vendor-info-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.vendor-info-box li {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    padding: var(--spacing-xs) 0;
-    padding-left: var(--spacing-lg);
-    position: relative;
-}
-
-.vendor-info-box li::before {
-    content: "✓";
-    position: absolute;
-    left: 0;
-    color: var(--primary-color);
-    font-weight: bold;
-}
-
-.radio-option small {
-    display: block;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-top: var(--spacing-xs);
-    font-weight: normal;
-}
-
-.form-page {
-    animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@media (max-width: 768px) {
-    .radio-group {
-        flex-direction: column;
-    }
-    
-    .radio-option {
-        flex-direction: column;
-        align-items: flex-start;
-        text-align: left;
-    }
-}
-</style>
-{% endblock %}  
+{% endblock %}

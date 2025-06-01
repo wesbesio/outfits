@@ -44,7 +44,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="main-content" class="main-content">
+    <main id="main-content" class="main-content" hx-ext="head-support">
         {% block content %}
         <!-- Default home content -->
         <div class="welcome-screen">
@@ -76,11 +76,11 @@
             <span class="bottom-nav-label">Add Outfit</span>
         </a>
         
-        <a href="/components/new" class="bottom-nav-btn"
-           hx-get="/components/new"
+        <a href="/new-component" class="bottom-nav-btn"
+           hx-get="/new-component"
            hx-target="#main-content"
            hx-push-url="true">
-            <span class="bottom-nav-icon">🔧</span>
+            <span class="bottom-nav-icon">🧥</span>
             <span class="bottom-nav-label">Add Component</span>
         </a>
         
@@ -93,12 +93,6 @@
         </a>
     </nav>
 
-    <!-- Loading Indicator -->
-    <div id="loading-indicator" class="loading-indicator">
-        <div class="spinner"></div>
-        <span>Loading...</span>
-    </div>
-
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -107,15 +101,6 @@
     
     <!-- HTMX Event Handlers -->
     <script>
-        // Show loading indicator on HTMX requests
-        document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            document.getElementById('loading-indicator').style.display = 'flex';
-        });
-        
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            document.getElementById('loading-indicator').style.display = 'none';
-        });
-        
         // Handle HTMX errors
         document.body.addEventListener('htmx:responseError', function(evt) {
             if (window.showToast) {
@@ -136,7 +121,7 @@
             const path = window.location.pathname;
             if (path.startsWith('/outfits')) {
                 document.querySelector('[href="/outfits"]').classList.add('active');
-            } else if (path.startsWith('/components')) {
+            } else if (path.startsWith('/components') || path.startsWith('/new-component')) {
                 document.querySelector('[href="/components"]').classList.add('active');
             }
         }

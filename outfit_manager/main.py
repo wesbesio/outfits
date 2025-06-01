@@ -1,26 +1,18 @@
-from fastapi.responses import HTMLResponse
-from fastapi import Request
+# File: main.py
+# Revision: 3.1 - Remove web_routes import and fix loading issues
 
-from fastapi import FastAPI, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Request, FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 import uvicorn
+import traceback
 
 from models.database import create_db_and_tables, get_session
-from routers import outfits, components, vendors, images, pieces
+from sqlmodel import Session, select
+from models import Outfit, Component, Vendor, Piece
 from services.seed_data import create_seed_data
-
-# Debug: Try to import web_routes separately
-try:
-    from routers import web_routes
-    print("✅ web_routes imported successfully")
-    print(f"✅ web_routes.router type: {type(web_routes.router)}")
-except Exception as e:
-    print(f"❌ Error importing web_routes: {e}")
-    import traceback
-    traceback.print_exc()
-    web_routes = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,82 +36,144 @@ app = FastAPI(
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Include web page routes FIRST (if successfully imported)
-if web_routes:
-    try:
-        app.include_router(web_routes.router, tags=["web"])
-        print("✅ web_routes.router registered successfully")
-    except Exception as e:
-        print(f"❌ Error registering web_routes: {e}")
-        import traceback
-        traceback.print_exc()
-else:
-    print("❌ Skipping web_routes registration - import failed")
+# Templates - define right in main.py
+templates = Jinja2Templates(directory="templates")
 
-# Include API routers AFTER web routes
+# Import only the API routers (no web_routes)
+from routers import outfits, components, vendors, images, pieces
+
+# Include API routers with explicit prefixes
 app.include_router(outfits.router, prefix="/api/outfits", tags=["outfits"])
 app.include_router(components.router, prefix="/api/components", tags=["components"])
 app.include_router(vendors.router, prefix="/api/vendors", tags=["vendors"])
 app.include_router(pieces.router, prefix="/api/pieces", tags=["pieces"])
 app.include_router(images.router, prefix="/api/images", tags=["images"])
 
-# Templates
-templates = Jinja2Templates(directory="templates")
+# HOME PAGE
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("base.html", {"request": request})
 
+# OUTFITS LIST
+@app.get("/outfits", response_class=HTMLResponse)
+async def outfits_list(request: Request):
+    # Check if this is an HTMX request
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    template = "outfits/list_content.html" if is_htmx else "outfits/list.html"
+    return templates.TemplateResponse(template, {"request": request})
+
+# COMPONENTS LIST
+@app.get("/components", response_class=HTMLResponse)
+async def components_list(request: Request):
+    # Check if this is an HTMX request
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    template = "components/list_content.html" if is_htmx else "components/list.html"
+    return templates.TemplateResponse(template, {"request": request})
+
+# NEW COMPONENT FORM - Explicitly defined with alternate path
+@app.get("/new-component", response_class=HTMLResponse)
+async def new_component_form_alt(request: Request, session: Session = Depends(get_session)):
+    """Alternative path for new component form"""
+    try:
+        vendors = session.exec(select(Vendor).where(Vendor.active == True)).all()
+        pieces = session.exec(select(Piece).where(Piece.active == True)).all()
+        
+        # Check if this is an HTMX request
+        is_htmx = request.headers.get('HX-Request') == 'true'
+        template = "forms/component_form_content.html" if is_htmx else "forms/component_form.html"
+        
+        return templates.TemplateResponse(template, {
+            "request": request,
+            "component": None,
+            "vendors": vendors,
+            "pieces": pieces,
+            "is_edit": False,
+            "page_title": "Create New Component"
+        })
+    except Exception as e:
+        error_msg = f"Error in new_component_form_alt: {str(e)}"
+        print(error_msg)
+        traceback.print_exc()
+        return HTMLResponse(f"""
+        <html>
+            <body>
+                <h1>Error Loading Component Form</h1>
+                <p>{error_msg}</p>
+                <pre>{traceback.format_exc()}</pre>
+            </body>
+        </html>
+        """)
+
+# Redirect /components/new to /new-component
+@app.get("/components/new")
+async def components_new_redirect():
+    return RedirectResponse("/new-component", status_code=302)
+
+# NEW OUTFIT FORM 
+@app.get("/outfits/new", response_class=HTMLResponse)
+async def new_outfit_form(request: Request, session: Session = Depends(get_session)):
+    try:
+        vendors = session.exec(select(Vendor).where(Vendor.active == True)).all()
+        
+        # Check if this is an HTMX request
+        is_htmx = request.headers.get('HX-Request') == 'true'
+        template = "forms/outfit_form_content.html" if is_htmx else "forms/outfit_form.html"
+        
+        return templates.TemplateResponse(template, {
+            "request": request,
+            "outfit": None,
+            "vendors": vendors,
+            "is_edit": False,
+            "page_title": "Create New Outfit"
+        })
+    except Exception as e:
+        error_msg = f"Error in new_outfit_form: {str(e)}"
+        print(error_msg)
+        return HTMLResponse(f"<html><body><h1>Error</h1><p>{error_msg}</p></body></html>")
+
+# NEW VENDOR FORM
+@app.get("/vendors/new", response_class=HTMLResponse)
+async def new_vendor_form(request: Request):
+    try:
+        # Check if this is an HTMX request
+        is_htmx = request.headers.get('HX-Request') == 'true'
+        template = "forms/vendor_form_content.html" if is_htmx else "forms/vendor_form.html"
+        
+        return templates.TemplateResponse(template, {
+            "request": request,
+            "vendor": None,
+            "is_edit": False,
+            "page_title": "Create New Vendor"
+        })
+    except Exception as e:
+        error_msg = f"Error in new_vendor_form: {str(e)}"
+        print(error_msg)
+        return HTMLResponse(f"<html><body><h1>Error</h1><p>{error_msg}</p></body></html>")
+
+# Debugging route
+@app.get("/debug/routes", response_class=HTMLResponse)
+async def debug_routes(request: Request):
+    """Debug route to show all registered routes"""
+    route_list = []
+    for route in app.routes:
+        if hasattr(route, 'path'):
+            methods = ",".join(route.methods) if hasattr(route, 'methods') and route.methods else "GET"
+            route_list.append(f"<li>{route.path} [{methods}]</li>")
+    
+    return f"""
+    <html>
+        <head><title>Route Debugging</title></head>
+        <body>
+            <h1>Registered Routes</h1>
+            <ul>{"".join(route_list)}</ul>
+        </body>
+    </html>
+    """
+
+# Health check
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
-# Simple test route to verify FastAPI is working
-@app.get("/test/main-routes-working")
-async def test_main_routes():
-    return {"message": "Main routes working!", "web_routes_loaded": web_routes is not None}
-
-# Debug endpoint to see all registered routes
-@app.get("/debug/all-registered-routes")
-async def debug_all_routes():
-    routes_info = []
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            routes_info.append({
-                "path": route.path,
-                "methods": list(route.methods) if route.methods else [],
-                "name": getattr(route, 'name', 'Unknown')
-            })
-    
-    # Filter for relevant routes
-    redirect_routes = [r for r in routes_info if '/new' in r['path']]
-    form_routes = [r for r in routes_info if '/forms/' in r['path']]
-    test_routes = [r for r in routes_info if '/test/' in r['path']]
-    
-    return {
-        "total_routes": len(routes_info),
-        "redirect_routes": redirect_routes,
-        "form_routes": form_routes,
-        "test_routes": test_routes
-    }
-
-
-    # Add this test endpoint directly to main.py after the app creation
-# This will help us determine if the issue is with the web_routes router or something else
-
-@app.get("/test/direct-component-form", response_class=HTMLResponse)
-async def test_direct_component_form(request: Request):
-    """Test component form directly in main app"""
-    templates = Jinja2Templates(directory="templates")
-    
-    fake_data = {
-        "request": request,
-        "component": None,
-        "vendors": [{"venid": 1, "name": "Test Vendor"}],
-        "pieces": [{"piecid": 1, "name": "Test Piece"}],
-        "is_edit": False,
-        "page_title": "Direct Test"
-    }
-    
-    return templates.TemplateResponse("forms/component_form.html", fake_data)
-
-    
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-

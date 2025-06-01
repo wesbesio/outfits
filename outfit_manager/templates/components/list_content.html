@@ -1,0 +1,176 @@
+<!-- File: templates/components/list_content.html -->
+<!-- Content-only template for HTMX requests -->
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <h2 class="page-title">Your Components</h2>
+        <div class="page-actions">
+            <a href="/new-component" 
+               class="btn btn-primary" 
+               hx-get="/new-component" 
+               hx-target="#main-content"
+               hx-push-url="true">
+                <span>➕</span> New Component
+            </a>
+        </div>
+    </div>
+
+    <!-- Sort and Filter Options -->
+    <div class="controls-bar">
+        <div class="sort-options">
+            <label for="sort-by" class="control-label">Sort by:</label>
+            <select id="sort-by" class="form-select" 
+                    hx-get="/api/components" 
+                    hx-target="#components-grid"
+                    hx-include="[name='filter-active'], [name='filter-vendor'], [name='filter-piece']">
+                <option value="name">Name</option>
+                <option value="cost">Cost</option>
+                <option value="brand">Brand</option>
+                <option value="created">Date Created</option>
+                <option value="modified">Last Modified</option>
+            </select>
+        </div>
+        
+        <div class="filter-options">
+            <label class="control-label">
+                <input type="checkbox" name="filter-active" value="true" checked
+                       hx-get="/api/components" 
+                       hx-target="#components-grid"
+                       hx-include="[name='sort-by'], [name='filter-vendor'], [name='filter-piece']">
+                Active Only
+            </label>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="advanced-filters">
+        <div class="filter-group">
+            <label for="filter-vendor" class="control-label">Vendor:</label>
+            <select id="filter-vendor" name="filter-vendor" class="form-select"
+                    hx-get="/api/components" 
+                    hx-target="#components-grid"
+                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-piece']">
+                <option value="">All Vendors</option>
+                <!-- Vendor options loaded via HTMX -->
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="filter-piece" class="control-label">Piece Type:</label>
+            <select id="filter-piece" name="filter-piece" class="form-select"
+                    hx-get="/api/components" 
+                    hx-target="#components-grid"
+                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-vendor']">
+                <option value="">All Types</option>
+                <!-- Piece type options loaded via HTMX -->
+            </select>
+        </div>
+        
+        <button class="btn btn-secondary btn-small" onclick="clearFilters()">
+            Clear Filters
+        </button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-number" id="total-components">-</span>
+            <span class="stat-label">Total Components</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="total-value">$-</span>
+            <span class="stat-label">Total Value</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="avg-cost">$-</span>
+            <span class="stat-label">Average Cost</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="unique-vendors">-</span>
+            <span class="stat-label">Vendors</span>
+        </div>
+    </div>
+
+    <!-- Components Grid -->
+    <div id="components-grid" 
+         hx-get="/api/components" 
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML"
+         hx-headers='{"Accept": "text/html"}'>
+        <!-- Loading state -->
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading components...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function clearFilters() {
+    // Reset all filter selects
+    document.getElementById('filter-vendor').value = '';
+    document.getElementById('filter-piece').value = '';
+    document.querySelector('[name="filter-active"]').checked = true;
+    document.getElementById('sort-by').value = 'name';
+    
+    // Trigger reload
+    htmx.trigger('#components-grid', 'refresh');
+}
+
+// Update stats when components load
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'components-grid') {
+        updateComponentStats();
+    }
+});
+
+function updateComponentStats() {
+    const componentCards = document.querySelectorAll('.component-card');
+    const totalComponents = componentCards.length;
+    
+    let totalValue = 0;
+    const vendors = new Set();
+    
+    componentCards.forEach(card => {
+        const costElement = card.querySelector('.card-price');
+        if (costElement) {
+            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
+            totalValue += cost;
+        }
+        
+        const vendorElement = card.querySelector('.detail-value');
+        if (vendorElement && vendorElement.textContent.trim()) {
+            vendors.add(vendorElement.textContent.trim());
+        }
+    });
+    
+    const avgCost = totalComponents > 0 ? Math.round(totalValue / totalComponents) : 0;
+    
+    // Update stat displays
+    document.getElementById('total-components').textContent = totalComponents;
+    document.getElementById('total-value').textContent = `$${totalValue}`;
+    document.getElementById('avg-cost').textContent = `$${avgCost}`;
+    document.getElementById('unique-vendors').textContent = vendors.size;
+}
+
+// Load vendor and piece options on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load vendors for filter
+    htmx.ajax('GET', '/api/vendors', {
+        target: '#filter-vendor',
+        swap: 'innerHTML',
+        source: '#filter-vendor'
+    });
+    
+    // Load piece types for filter
+    htmx.ajax('GET', '/api/pieces', {
+        target: '#filter-piece',
+        swap: 'innerHTML',
+        source: '#filter-piece'
+    });
+});
+</script>
+{% endblock %}

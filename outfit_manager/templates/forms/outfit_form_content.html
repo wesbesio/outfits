@@ -1,10 +1,5 @@
-<!-- File: templates/forms/outfit_form.html -->
-<!-- Revision: 2.0 - HTMX Navigation Refactor -->
-<!-- Updated: Full page form, no modal dependencies -->
-
-{% extends "base.html" %}
-
-{% block title %}{{ page_title }} - Outfit Manager{% endblock %}
+<!-- File: templates/forms/outfit_form_content.html -->
+<!-- Content-only template for HTMX requests -->
 
 {% block content %}
 <div class="container">
@@ -115,49 +110,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.form-help {
-    display: block;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-top: var(--spacing-xs);
-    font-style: italic;
-}
-
-.radio-option small {
-    display: block;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-top: var(--spacing-xs);
-    font-weight: normal;
-}
-
-.form-page {
-    animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@media (max-width: 768px) {
-    .radio-group {
-        flex-direction: column;
-    }
-    
-    .radio-option {
-        flex-direction: column;
-        align-items: flex-start;
-        text-align: left;
-    }
-}
-</style>
-{% endblock %}  
+{% endblock %}
