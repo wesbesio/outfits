@@ -1,40 +1,5 @@
 // Global utility functions for the Outfit Manager app
 
-// Modal management
-function showModal() {
-    console.log('showModal called');
-    const modal = document.getElementById('modal-container');
-    if (modal) {
-        modal.classList.add('show');
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        console.log('Modal should now be visible');
-    } else {
-        console.error('Modal container not found');
-    }
-}
-
-function hideModal() {
-    console.log('hideModal called');
-    const modal = document.getElementById('modal-container');
-    if (modal) {
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-        
-        // Clear modal content
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.innerHTML = '';
-        }
-        console.log('Modal hidden');
-    }
-}
-
-// Make functions globally available
-window.showModal = showModal;
-window.hideModal = hideModal;
-
 // Toast notifications
 function showToast(message, type = 'success', duration = 4000) {
     const container = document.getElementById('toast-container');
@@ -68,37 +33,6 @@ function showToast(message, type = 'success', duration = 4000) {
 
 // Make showToast globally available
 window.showToast = showToast;
-
-// Toast notifications
-function showToast(message, type = 'success', duration = 4000) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    
-    container.appendChild(toast);
-    
-    // Auto-remove toast
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-in forwards';
-        setTimeout(() => {
-            if (container.contains(toast)) {
-                container.removeChild(toast);
-            }
-        }, 300);
-    }, duration);
-    
-    // Click to dismiss
-    toast.addEventListener('click', () => {
-        toast.style.animation = 'slideOut 0.3s ease-in forwards';
-        setTimeout(() => {
-            if (container.contains(toast)) {
-                container.removeChild(toast);
-            }
-        }, 300);
-    });
-}
 
 // Form utilities
 function resetForm(formId) {
@@ -367,6 +301,19 @@ function handleError(error, context = '') {
     showToast(`Something went wrong${context ? ` in ${context}` : ''}. Please try again.`, 'error');
 }
 
+// Radio button styling helper
+function updateRadioButtonStyling() {
+    const radioOptions = document.querySelectorAll('.radio-option');
+    radioOptions.forEach(option => {
+        const input = option.querySelector('input[type="radio"]');
+        if (input && input.checked) {
+            option.classList.add('selected');
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+}
+
 // Initialize app
 function initializeApp() {
     // Add touch support for mobile devices
@@ -374,12 +321,9 @@ function initializeApp() {
     
     // Set up keyboard shortcuts
     document.addEventListener('keydown', function(e) {
-        // Escape key closes modals
+        // Escape key for potential future features
         if (e.key === 'Escape') {
-            const modal = document.getElementById('modal-container');
-            if (modal && modal.style.display === 'flex') {
-                hideModal();
-            }
+            // Future: close any open overlays
         }
         
         // Ctrl/Cmd + K for quick search (future feature)
@@ -413,23 +357,35 @@ function initializeApp() {
     document.body.addEventListener('htmx:timeout', function(evt) {
         showToast('Request timed out. Please check your connection.', 'error');
     });
+    
+    // Handle radio button changes
+    document.addEventListener('change', function(e) {
+        if (e.target.type === 'radio') {
+            const name = e.target.name;
+            const radioOptions = document.querySelectorAll(`input[name="${name}"]`);
+            radioOptions.forEach(option => {
+                const label = option.closest('.radio-option');
+                if (option.checked) {
+                    label.classList.add('selected');
+                } else {
+                    label.classList.remove('selected');
+                }
+            });
+        }
+    });
 }
 
 function initializeDynamicContent() {
     // Re-initialize radio button styling
-    const radioOptions = document.querySelectorAll('.radio-option');
-    radioOptions.forEach(option => {
-        const input = option.querySelector('input[type="radio"]');
-        if (input && input.checked) {
-            option.classList.add('selected');
-        }
-    });
+    updateRadioButtonStyling();
     
     // Re-initialize any new image upload areas
     const imageUploads = document.querySelectorAll('.image-upload-container');
     imageUploads.forEach(upload => {
         if (!upload.hasAttribute('data-initialized')) {
-            initializeImageUpload(upload);
+            if (window.initializeImageUpload) {
+                initializeImageUpload(upload);
+            }
             upload.setAttribute('data-initialized', 'true');
         }
     });
@@ -444,8 +400,6 @@ if (document.readyState === 'loading') {
 
 // Export functions for global use
 window.appUtils = {
-    showModal,
-    hideModal,
     showToast,
     resetForm,
     validateForm,
@@ -461,5 +415,6 @@ window.appUtils = {
     removeFromStorage,
     handleError,
     showLoading,
-    hideLoading
+    hideLoading,
+    updateRadioButtonStyling
 };

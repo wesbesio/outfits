@@ -8,12 +8,13 @@
     <div class="page-header">
         <h2 class="page-title">Your Outfits</h2>
         <div class="page-actions">
-            <button class="btn btn-primary" 
-                    hx-get="/forms/new-outfit" 
-                    hx-target="#modal-container .modal-content"
-                    onclick="showModal()">
+            <a href="/outfits/new" 
+               class="btn btn-primary" 
+               hx-get="/outfits/new" 
+               hx-target="#main-content"
+               hx-push-url="true">
                 <span>➕</span> New Outfit
-            </button>
+            </a>
         </div>
     </div>
 
@@ -43,6 +44,22 @@
         </div>
     </div>
 
+    <!-- Quick Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-number" id="total-outfits">-</span>
+            <span class="stat-label">Total Outfits</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="total-value">$-</span>
+            <span class="stat-label">Total Value</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="avg-cost">$-</span>
+            <span class="stat-label">Average Cost</span>
+        </div>
+    </div>
+
     <!-- Outfits Grid -->
     <div id="outfits-grid" 
          hx-get="/api/outfits" 
@@ -57,43 +74,6 @@
         </div>
     </div>
 </div>
-
-<!-- Outfit Card Template (for HTMX responses) -->
-<template id="outfit-card-template">
-    <div class="card outfit-card" 
-         hx-get="/outfits/{outfit_id}" 
-         hx-target="#main-content" 
-         hx-push-url="true"
-         data-outfit-id="{outfit_id}">
-        
-        <div class="card-image">
-            <!-- Dynamic image or placeholder -->
-            <div class="card-image-placeholder" id="outfit-image-{outfit_id}">
-                👗
-            </div>
-        </div>
-        
-        <div class="card-content">
-            <h3 class="card-title">{outfit_name}</h3>
-            
-            <div class="outfit-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Components:</span>
-                    <span class="stat-value">{component_count}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Total Cost:</span>
-                    <span class="stat-value card-price">${calculated_cost}</span>
-                </div>
-            </div>
-            
-            <div class="card-meta">
-                <span class="card-badge {status_class}">{status_text}</span>
-                <span class="card-date">{created_date}</span>
-            </div>
-        </div>
-    </div>
-</template>
 
 <style>
 .page-header {
@@ -122,7 +102,7 @@
     background: rgba(255, 255, 255, 0.8);
     padding: var(--spacing-md);
     border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
     box-shadow: var(--shadow-sm);
 }
 
@@ -139,6 +119,38 @@
     font-size: 0.875rem;
 }
 
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    font-weight: 600;
+}
+
 .outfit-stats {
     display: flex;
     justify-content: space-between;
@@ -153,7 +165,7 @@
     text-align: center;
 }
 
-.stat-label {
+.stat-item .stat-label {
     font-size: 0.75rem;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -161,7 +173,7 @@
     margin-bottom: var(--spacing-xs);
 }
 
-.stat-value {
+.stat-item .stat-value {
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -191,9 +203,43 @@
         gap: var(--spacing-md);
     }
     
+    .stats-bar {
+        grid-template-columns: 1fr;
+    }
+    
     .outfit-stats {
         justify-content: space-around;
     }
 }
 </style>
+
+<script>
+// Update stats when outfits load
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'outfits-grid') {
+        updateOutfitStats();
+    }
+});
+
+function updateOutfitStats() {
+    const outfitCards = document.querySelectorAll('.outfit-card');
+    const totalOutfits = outfitCards.length;
+    
+    let totalValue = 0;
+    outfitCards.forEach(card => {
+        const costElement = card.querySelector('.card-price');
+        if (costElement) {
+            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
+            totalValue += cost;
+        }
+    });
+    
+    const avgCost = totalOutfits > 0 ? Math.round(totalValue / totalOutfits) : 0;
+    
+    // Update stat displays
+    document.getElementById('total-outfits').textContent = totalOutfits;
+    document.getElementById('total-value').textContent = `$${totalValue}`;
+    document.getElementById('avg-cost').textContent = `$${avgCost}`;
+}
+</script>
 {% endblock %}

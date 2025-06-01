@@ -1,4 +1,9 @@
+# File: routers/vendors.py
+# Revision: 2.0 - HTMX Navigation Refactor
+# Updated: Added HTMX redirects, removed modal dependencies
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
@@ -35,9 +40,9 @@ async def get_vendor(vendor_id: int, session: Session = Depends(get_session)):
     
     return vendor
 
-@router.post("/", response_model=Vendor)
+@router.post("/")
 async def create_vendor(vendor: VendorCreate, session: Session = Depends(get_session)):
-    """Create new vendor"""
+    """Create new vendor - returns HTMX redirect response"""
     # Check if vendor with same name already exists
     existing = session.exec(
         select(Vendor).where(Vendor.name == vendor.name)
@@ -54,15 +59,18 @@ async def create_vendor(vendor: VendorCreate, session: Session = Depends(get_ses
     session.commit()
     session.refresh(db_vendor)
     
-    return db_vendor
+    # Return HTMX redirect to components list (where vendors are managed)
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = "/components"
+    return response
 
-@router.put("/{vendor_id}", response_model=Vendor)
+@router.put("/{vendor_id}")
 async def update_vendor(
     vendor_id: int,
     vendor_update: VendorUpdate,
     session: Session = Depends(get_session)
 ):
-    """Update vendor"""
+    """Update vendor - returns HTMX redirect response"""
     db_vendor = session.get(Vendor, vendor_id)
     if not db_vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
@@ -93,7 +101,10 @@ async def update_vendor(
     session.commit()
     session.refresh(db_vendor)
     
-    return db_vendor
+    # Return HTMX redirect to components list
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = "/components"
+    return response
 
 @router.delete("/{vendor_id}")
 async def delete_vendor(vendor_id: int, session: Session = Depends(get_session)):

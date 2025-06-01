@@ -8,12 +8,13 @@
     <div class="page-header">
         <h2 class="page-title">Your Components</h2>
         <div class="page-actions">
-            <button class="btn btn-primary" 
-                    hx-get="/forms/new-component" 
-                    hx-target="#modal-container .modal-content"
-                    onclick="showModal()">
+            <a href="/components/new" 
+               class="btn btn-primary" 
+               hx-get="/components/new" 
+               hx-target="#main-content"
+               hx-push-url="true">
                 <span>➕</span> New Component
-            </button>
+            </a>
         </div>
     </div>
 
@@ -73,6 +74,26 @@
         </button>
     </div>
 
+    <!-- Quick Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-number" id="total-components">-</span>
+            <span class="stat-label">Total Components</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="total-value">$-</span>
+            <span class="stat-label">Total Value</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="avg-cost">$-</span>
+            <span class="stat-label">Average Cost</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="unique-vendors">-</span>
+            <span class="stat-label">Vendors</span>
+        </div>
+    </div>
+
     <!-- Components Grid -->
     <div id="components-grid" 
          hx-get="/api/components" 
@@ -87,48 +108,6 @@
         </div>
     </div>
 </div>
-
-<!-- Component Card Template (for HTMX responses) -->
-<template id="component-card-template">
-    <div class="card component-card" 
-         hx-get="/components/{component_id}" 
-         hx-target="#main-content" 
-         hx-push-url="true"
-         data-component-id="{component_id}">
-        
-        <div class="card-image">
-            <!-- Dynamic image or placeholder -->
-            <div class="card-image-placeholder" id="component-image-{component_id}">
-                🧥
-            </div>
-            
-            <!-- Component Type Badge -->
-            <div class="card-badge-overlay">
-                <span class="type-badge">{piece_name}</span>
-            </div>
-        </div>
-        
-        <div class="card-content">
-            <h3 class="card-title">{component_name}</h3>
-            
-            <div class="component-details">
-                <div class="detail-row">
-                    <span class="detail-label">Brand:</span>
-                    <span class="detail-value">{brand}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Vendor:</span>
-                    <span class="detail-value">{vendor_name}</span>
-                </div>
-            </div>
-            
-            <div class="card-meta">
-                <span class="card-price">${cost}</span>
-                <span class="card-badge {status_class}">{status_text}</span>
-            </div>
-        </div>
-    </div>
-</template>
 
 <style>
 .page-header {
@@ -168,7 +147,7 @@
     background: rgba(255, 255, 255, 0.6);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
     flex-wrap: wrap;
 }
 
@@ -190,6 +169,38 @@
     color: var(--text-primary);
     font-size: 0.875rem;
     white-space: nowrap;
+}
+
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    font-weight: 600;
 }
 
 .component-card {
@@ -289,6 +300,10 @@
         gap: var(--spacing-xs);
     }
     
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
     .detail-row {
         flex-direction: column;
         align-items: flex-start;
@@ -314,16 +329,52 @@ function clearFilters() {
     htmx.trigger('#components-grid', 'refresh');
 }
 
+// Update stats when components load
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'components-grid') {
+        updateComponentStats();
+    }
+});
+
+function updateComponentStats() {
+    const componentCards = document.querySelectorAll('.component-card');
+    const totalComponents = componentCards.length;
+    
+    let totalValue = 0;
+    const vendors = new Set();
+    
+    componentCards.forEach(card => {
+        const costElement = card.querySelector('.card-price');
+        if (costElement) {
+            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
+            totalValue += cost;
+        }
+        
+        const vendorElement = card.querySelector('.detail-value');
+        if (vendorElement && vendorElement.textContent.trim()) {
+            vendors.add(vendorElement.textContent.trim());
+        }
+    });
+    
+    const avgCost = totalComponents > 0 ? Math.round(totalValue / totalComponents) : 0;
+    
+    // Update stat displays
+    document.getElementById('total-components').textContent = totalComponents;
+    document.getElementById('total-value').textContent = `$${totalValue}`;
+    document.getElementById('avg-cost').textContent = `$${avgCost}`;
+    document.getElementById('unique-vendors').textContent = vendors.size;
+}
+
 // Load vendor and piece options on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Load vendors
+    // Load vendors for filter
     htmx.ajax('GET', '/api/vendors', {
         target: '#filter-vendor',
         swap: 'innerHTML',
         source: '#filter-vendor'
     });
     
-    // Load piece types (you'll need an endpoint for this)
+    // Load piece types for filter
     htmx.ajax('GET', '/api/pieces', {
         target: '#filter-piece',
         swap: 'innerHTML',

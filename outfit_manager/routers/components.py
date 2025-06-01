@@ -1,4 +1,9 @@
+# File: routers/components.py
+# Revision: 2.0 - HTMX Navigation Refactor
+# Updated: Removed modal dependencies, added HTMX redirects for form submissions
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse, HTMLResponse, Response
 from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime
@@ -74,12 +79,12 @@ async def get_component(component_id: int, session: Session = Depends(get_sessio
         piece_name=piece_name
     )
 
-@router.post("/", response_model=ComponentResponse)
+@router.post("/")
 async def create_component(
     component: ComponentCreate, 
     session: Session = Depends(get_session)
 ):
-    """Create new component"""
+    """Create new component - returns HTMX redirect response"""
     # Validate vendor and piece if provided
     if component.vendorid:
         vendor = session.get(Vendor, component.vendorid)
@@ -96,32 +101,18 @@ async def create_component(
     session.commit()
     session.refresh(db_component)
     
-    # Get vendor and piece names for response
-    vendor_name = None
-    piece_name = None
-    
-    if db_component.vendorid:
-        vendor = session.get(Vendor, db_component.vendorid)
-        vendor_name = vendor.name if vendor else None
-    
-    if db_component.piecid:
-        piece = session.get(Piece, db_component.piecid)
-        piece_name = piece.name if piece else None
-    
-    return ComponentResponse(
-        **db_component.model_dump(),
-        has_image=False,
-        vendor_name=vendor_name,
-        piece_name=piece_name
-    )
+    # Return HTMX redirect to components list
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = "/components"
+    return response
 
-@router.put("/{component_id}", response_model=ComponentResponse)
+@router.put("/{component_id}")
 async def update_component(
     component_id: int,
     component_update: ComponentUpdate,
     session: Session = Depends(get_session)
 ):
-    """Update component"""
+    """Update component - returns HTMX redirect response"""
     db_component = session.get(Component, component_id)
     if not db_component:
         raise HTTPException(status_code=404, detail="Component not found")
@@ -148,24 +139,10 @@ async def update_component(
     session.commit()
     session.refresh(db_component)
     
-    # Get vendor and piece names for response
-    vendor_name = None
-    piece_name = None
-    
-    if db_component.vendorid:
-        vendor = session.get(Vendor, db_component.vendorid)
-        vendor_name = vendor.name if vendor else None
-    
-    if db_component.piecid:
-        piece = session.get(Piece, db_component.piecid)
-        piece_name = piece.name if piece else None
-    
-    return ComponentResponse(
-        **db_component.model_dump(),
-        has_image=db_component.image is not None,
-        vendor_name=vendor_name,
-        piece_name=piece_name
-    )
+    # Return HTMX redirect to component detail
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = f"/components/{component_id}"
+    return response
 
 @router.delete("/{component_id}")
 async def delete_component(component_id: int, session: Session = Depends(get_session)):

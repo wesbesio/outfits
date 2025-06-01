@@ -1,5 +1,9 @@
+# File: routers/outfits.py
+# Revision: 2.0 - HTMX Navigation Refactor
+# Updated: Removed modal dependencies, added HTMX redirects for form submissions
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlmodel import Session, select, func
 from typing import List, Optional
 from datetime import datetime
@@ -76,28 +80,26 @@ async def get_outfit(outfit_id: int, session: Session = Depends(get_session)):
         has_image=outfit.image is not None
     )
 
-@router.post("/", response_model=OutfitResponse)
+@router.post("/")
 async def create_outfit(outfit: OutfitCreate, session: Session = Depends(get_session)):
-    """Create new outfit"""
+    """Create new outfit - returns HTMX redirect response"""
     db_outfit = Outfit(**outfit.model_dump())
     session.add(db_outfit)
     session.commit()
     session.refresh(db_outfit)
     
-    return OutfitResponse(
-        **db_outfit.model_dump(),
-        calculated_cost=0,
-        component_count=0,
-        has_image=False
-    )
+    # Return HTMX redirect to outfits list
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = "/outfits"
+    return response
 
-@router.put("/{outfit_id}", response_model=OutfitResponse)
+@router.put("/{outfit_id}")
 async def update_outfit(
     outfit_id: int, 
     outfit_update: OutfitUpdate, 
     session: Session = Depends(get_session)
 ):
-    """Update outfit"""
+    """Update outfit - returns HTMX redirect response"""
     db_outfit = session.get(Outfit, outfit_id)
     if not db_outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
@@ -112,22 +114,10 @@ async def update_outfit(
     session.commit()
     session.refresh(db_outfit)
     
-    # Calculate cost and component count
-    component_query = select(Component).join(Out2Comp).where(
-        Out2Comp.outid == outfit_id,
-        Out2Comp.active == True
-    )
-    components = session.exec(component_query).all()
-    
-    calculated_cost = sum(comp.cost for comp in components)
-    component_count = len(components)
-    
-    return OutfitResponse(
-        **db_outfit.model_dump(),
-        calculated_cost=calculated_cost,
-        component_count=component_count,
-        has_image=db_outfit.image is not None
-    )
+    # Return HTMX redirect to outfit detail
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = f"/outfits/{outfit_id}"
+    return response
 
 @router.delete("/{outfit_id}")
 async def delete_outfit(outfit_id: int, session: Session = Depends(get_session)):

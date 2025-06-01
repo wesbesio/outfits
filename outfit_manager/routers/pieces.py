@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, HTMLResponse, Response
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
@@ -7,6 +9,7 @@ from models.database import get_session
 from models import Piece, PieceCreate
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_model=List[Piece])
 async def get_pieces(
@@ -35,9 +38,9 @@ async def get_piece(piece_id: int, session: Session = Depends(get_session)):
     
     return piece
 
-@router.post("/", response_model=Piece)
+@router.post("/")
 async def create_piece(piece: PieceCreate, session: Session = Depends(get_session)):
-    """Create new piece type"""
+    """Create new piece type - returns HTMX redirect response"""
     # Check if piece with same name already exists
     existing = session.exec(
         select(Piece).where(Piece.name == piece.name)
@@ -54,4 +57,21 @@ async def create_piece(piece: PieceCreate, session: Session = Depends(get_sessio
     session.commit()
     session.refresh(db_piece)
     
-    return db_piece
+    # Return HTMX redirect to components list (where pieces are used)
+    response = Response(status_code=200)
+    response.headers["HX-Redirect"] = "/components"
+    return response
+
+# HTMX specific endpoints for partial updates
+@router.get("/", response_class=HTMLResponse, name="piece_options")
+async def get_piece_options_html(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """Get pieces as HTML options for select elements"""
+    pieces = session.exec(select(Piece).where(Piece.active == True)).all()
+    
+    return templates.TemplateResponse("partials/piece_options.html", {
+        "request": request,
+        "pieces": pieces
+    })

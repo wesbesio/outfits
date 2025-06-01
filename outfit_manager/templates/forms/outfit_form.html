@@ -1,0 +1,163 @@
+<!-- File: templates/forms/outfit_form.html -->
+<!-- Revision: 2.0 - HTMX Navigation Refactor -->
+<!-- Updated: Full page form, no modal dependencies -->
+
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Outfit Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb-nav">
+        <a href="/outfits" class="breadcrumb-link" 
+           hx-get="/outfits" hx-target="#main-content" hx-push-url="true">
+            ← Back to Outfits
+        </a>
+    </div>
+
+    <!-- Form Page -->
+    <div class="form-page">
+        <div class="form-page-header">
+            <h1 class="form-page-title">{{ page_title }}</h1>
+            <p class="form-page-subtitle">
+                {% if is_edit %}
+                    Update your outfit details and settings
+                {% else %}
+                    Create a new outfit to organize your components
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="form">
+            <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
+                  hx-target="#main-content"
+                  hx-swap="innerHTML"
+                  hx-push-url="{% if is_edit %}/outfits/{{ outfit.outid }}{% else %}/outfits{% endif %}"
+                  hx-on::after-request="if(event.detail.successful) { showToast('Outfit saved successfully!', 'success'); }">
+                
+                <div class="form-group">
+                    <label for="outfit-name" class="form-label">Outfit Name *</label>
+                    <input type="text" 
+                           id="outfit-name" 
+                           name="name" 
+                           class="form-input" 
+                           value="{% if outfit %}{{ outfit.name }}{% endif %}" 
+                           required
+                           placeholder="e.g. Summer Casual, Work Meeting, Date Night">
+                </div>
+                
+                <div class="form-group">
+                    <label for="outfit-description" class="form-label">Description</label>
+                    <textarea id="outfit-description" 
+                              name="description" 
+                              class="form-textarea" 
+                              placeholder="Describe this outfit, when to wear it, or special notes...">{% if outfit %}{{ outfit.description or '' }}{% endif %}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="outfit-vendor" class="form-label">Primary Vendor</label>
+                    <select id="outfit-vendor" name="vendorid" class="form-select">
+                        <option value="">Select vendor...</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.venid }}" 
+                                {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
+                            {{ vendor.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-help">Optional: Choose the main vendor where you got most components</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <div class="radio-group">
+                        <label class="radio-option {% if not outfit or outfit.active %}selected{% endif %}">
+                            <input type="radio" name="active" value="true" 
+                                   {% if not outfit or outfit.active %}checked{% endif %}>
+                            <span>Active</span>
+                            <small>Can be worn and shown in lists</small>
+                        </label>
+                        <label class="radio-option {% if outfit and not outfit.active %}selected{% endif %}">
+                            <input type="radio" name="active" value="false" 
+                                   {% if outfit and not outfit.active %}checked{% endif %}>
+                            <span>Retired</span>
+                            <small>Hidden from active lists</small>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="outfit-notes" class="form-label">Notes</label>
+                    <textarea id="outfit-notes" 
+                              name="notes" 
+                              class="form-textarea" 
+                              placeholder="Any additional notes, care instructions, or reminders...">{% if outfit %}{{ outfit.notes or '' }}{% endif %}</textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" 
+                            class="btn btn-secondary"
+                            hx-get="/outfits"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        {% if is_edit %}
+                            <span>💾</span> Update Outfit
+                        {% else %}
+                            <span>✨</span> Create Outfit
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-help {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--spacing-xs);
+    font-style: italic;
+}
+
+.radio-option small {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--spacing-xs);
+    font-weight: normal;
+}
+
+.form-page {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .radio-group {
+        flex-direction: column;
+    }
+    
+    .radio-option {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}

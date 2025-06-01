@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Outfit Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb-nav">
+        <a href="/components" class="breadcrumb-link" 
+           hx-get="/components" hx-target="#main-content" hx-push-url="true">
+            ← Back to Components
+        </a>
+    </div>
+
+    <!-- Form Page -->
+    <div class="form-page">
+        <div class="form-page-header">
+            <h1 class="form-page-title">{{ page_title }}</h1>
+            <p class="form-page-subtitle">
+                {% if is_edit %}
+                    Update vendor information and settings
+                {% else %}
+                    Add a new vendor to organize your shopping sources
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="form">
+            <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/vendors{% if is_edit %}/{{ vendor.venid }}{% endif %}"
+                  hx-target="#main-content"
+                  hx-swap="innerHTML"
+                  hx-push-url="/components"
+                  hx-on::after-request="if(event.detail.successful) { showToast('Vendor saved successfully!', 'success'); }">
+                
+                <div class="form-group">
+                    <label for="vendor-name" class="form-label">Vendor Name *</label>
+                    <input type="text" 
+                           id="vendor-name" 
+                           name="name" 
+                           class="form-input" 
+                           value="{% if vendor %}{{ vendor.name }}{% endif %}" 
+                           required
+                           placeholder="e.g. Amazon, Poshmark, Zara, Local Boutique">
+                </div>
+                
+                <div class="form-group">
+                    <label for="vendor-description" class="form-label">Description</label>
+                    <textarea id="vendor-description" 
+                              name="description" 
+                              class="form-textarea" 
+                              placeholder="Describe this vendor - what they sell, price range, quality, etc...">{% if vendor %}{{ vendor.description or '' }}{% endif %}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <div class="radio-group">
+                        <label class="radio-option {% if not vendor or vendor.active %}selected{% endif %}">
+                            <input type="radio" name="active" value="true" 
+                                   {% if not vendor or vendor.active %}checked{% endif %}>
+                            <span>Active</span>
+                            <small>Currently shopping from this vendor</small>
+                        </label>
+                        <label class="radio-option {% if vendor and not vendor.active %}selected{% endif %}">
+                            <input type="radio" name="active" value="false" 
+                                   {% if vendor and not vendor.active %}checked{% endif %}>
+                            <span>Inactive</span>
+                            <small>No longer using this vendor</small>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="vendor-info-box">
+                    <h3>💡 Why Add Vendors?</h3>
+                    <ul>
+                        <li>Track where you buy your clothes</li>
+                        <li>Organize components by shopping source</li>
+                        <li>Remember favorite stores and websites</li>
+                        <li>Calculate spending by vendor</li>
+                    </ul>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" 
+                            class="btn btn-secondary"
+                            hx-get="/components"
+                            hx-target="#main-content"
+                            hx-push-url="true">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        {% if is_edit %}
+                            <span>💾</span> Update Vendor
+                        {% else %}
+                            <span>✨</span> Create Vendor
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.vendor-info-box {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #E0E7FF 100%);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+    border-left: 4px solid var(--primary-color);
+}
+
+.vendor-info-box h3 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.vendor-info-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.vendor-info-box li {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    padding: var(--spacing-xs) 0;
+    padding-left: var(--spacing-lg);
+    position: relative;
+}
+
+.vendor-info-box li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.radio-option small {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: var(--spacing-xs);
+    font-weight: normal;
+}
+
+.form-page {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .radio-group {
+        flex-direction: column;
+    }
+    
+    .radio-option {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}

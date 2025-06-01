@@ -233,6 +233,58 @@ body {
     aspect-ratio: 1;
 }
 
+/* Form Page Styles */
+.form-page {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.form-page-header {
+    background: var(--accent-color);
+    padding: var(--spacing-xl);
+    text-align: center;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.form-page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.form-page-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.breadcrumb-nav {
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.breadcrumb-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    transition: color var(--transition-fast);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary-dark);
+    background: rgba(139, 92, 246, 0.2);
+}
+
 /* Cards */
 .card-grid {
     display: grid;
@@ -375,6 +427,7 @@ body {
     transition: all var(--transition-fast);
     border-radius: var(--radius-md);
     min-width: 60px;
+    text-decoration: none;
 }
 
 .bottom-nav-btn:hover {
@@ -390,60 +443,6 @@ body {
 .bottom-nav-label {
     font-size: 0.75rem;
     font-weight: 500;
-}
-
-/* Modal */
-.modal-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    display: none; /* Hidden by default */
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-md);
-    background: rgba(0, 0, 0, 0.3); /* Semi-transparent background */
-}
-
-.modal-container.show {
-    display: flex !important;
-}
-
-.modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(4px);
-}
-
-.modal-content {
-    background: white;
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    z-index: 1001;
-    animation: modalSlideIn 0.3s ease-out;
-    margin: 20px;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
 }
 
 /* Forms */
@@ -498,7 +497,7 @@ body {
 .form-actions {
     display: flex;
     gap: var(--spacing-md);
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: var(--spacing-xl);
     padding-top: var(--spacing-lg);
     border-top: 1px solid #E5E7EB;
@@ -641,6 +640,58 @@ body {
     }
 }
 
+/* Page Header Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg) 0;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.page-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+/* Empty States */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    text-align: center;
+    min-height: 300px;
+}
+
+.empty-content {
+    max-width: 400px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-lg);
+}
+
+.empty-content h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.25rem;
+}
+
+.empty-content p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header .container {
@@ -674,6 +725,16 @@ body {
     
     .radio-group {
         flex-direction: column;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        text-align: center;
+    }
+    
+    .form-page {
+        margin: var(--spacing-md);
     }
 }
 
