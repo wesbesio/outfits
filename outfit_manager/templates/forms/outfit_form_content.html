@@ -1,5 +1,5 @@
 <!-- File: templates/forms/outfit_form_content.html -->
-<!-- Content-only template for HTMX requests -->
+<!-- Revision: 3.1 - Add image upload functionality to creation form -->
 
 {% block content %}
 <div class="container">
@@ -25,11 +25,30 @@
         </div>
         
         <div class="form">
-            <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
+            <form id="outfit-form"
+                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
                   hx-target="#main-content"
                   hx-swap="innerHTML"
                   hx-push-url="{% if is_edit %}/outfits/{{ outfit.outid }}{% else %}/outfits{% endif %}"
-                  hx-on::after-request="if(event.detail.successful) { showToast('Outfit saved successfully!', 'success'); }">
+                  hx-on::after-request="handleFormSubmit(event)"
+                  enctype="multipart/form-data">
+                
+                <!-- Image Upload Section -->
+                <div class="form-group">
+                    <label class="form-label">Outfit Photo</label>
+                    <div class="image-upload-container" id="outfit-image-upload">
+                        <div class="upload-content">
+                            <span class="upload-icon">📁</span>
+                            <p class="upload-text">
+                                <strong>Click to upload</strong> or drag and drop<br>
+                                <small>JPEG, PNG, WebP up to 5MB</small>
+                            </p>
+                        </div>
+                        <input type="file" id="outfit-image-input" name="image_file" 
+                               accept="image/jpeg,image/png,image/webp" style="display: none;">
+                    </div>
+                    <input type="hidden" id="has-image" name="has_image" value="false">
+                </div>
                 
                 <div class="form-group">
                     <label for="outfit-name" class="form-label">Outfit Name *</label>
@@ -110,4 +129,15 @@
         </div>
     </div>
 </div>
+
+<script src="/static/js/form-image-upload.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize image upload
+    const uploadContainer = document.getElementById('outfit-image-upload');
+    if (uploadContainer) {
+        initializeFormImageUpload(uploadContainer, 'outfit');
+    }
+});
+</script>
 {% endblock %}
