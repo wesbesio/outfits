@@ -1,0 +1,106 @@
+<!-- File: templates/outfits/list_content.html -->
+<!-- Content-only template for HTMX requests -->
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <h2 class="page-title">Your Outfits</h2>
+        <div class="page-actions">
+            <a href="/outfits/new" 
+               class="btn btn-primary" 
+               hx-get="/outfits/new" 
+               hx-target="#main-content"
+               hx-push-url="true">
+                <span>➕</span> New Outfit
+            </a>
+        </div>
+    </div>
+
+    <!-- Sort and Filter Options -->
+    <div class="controls-bar">
+        <div class="sort-options">
+            <label for="sort-by" class="control-label">Sort by:</label>
+            <select id="sort-by" class="form-select" 
+                    hx-get="/api/outfits" 
+                    hx-target="#outfits-grid"
+                    hx-include="[name='filter-active']">
+                <option value="name">Name</option>
+                <option value="cost">Total Cost</option>
+                <option value="created">Date Created</option>
+                <option value="modified">Last Modified</option>
+            </select>
+        </div>
+        
+        <div class="filter-options">
+            <label class="control-label">
+                <input type="checkbox" name="filter-active" value="true" checked
+                       hx-get="/api/outfits" 
+                       hx-target="#outfits-grid"
+                       hx-include="[name='sort-by']">
+                Active Only
+            </label>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-number" id="total-outfits">-</span>
+            <span class="stat-label">Total Outfits</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="total-value">$-</span>
+            <span class="stat-label">Total Value</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="avg-cost">$-</span>
+            <span class="stat-label">Average Cost</span>
+        </div>
+    </div>
+
+    <!-- Outfits Grid -->
+    <div id="outfits-grid" 
+         hx-get="/api/outfits" 
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML"
+         hx-headers='{"Accept": "text/html"}'>
+        <!-- Loading state -->
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading outfits...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update stats when outfits load
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'outfits-grid') {
+        updateOutfitStats();
+    }
+});
+
+function updateOutfitStats() {
+    const outfitCards = document.querySelectorAll('.outfit-card');
+    const totalOutfits = outfitCards.length;
+    
+    let totalValue = 0;
+    outfitCards.forEach(card => {
+        const costElement = card.querySelector('.card-price');
+        if (costElement) {
+            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
+            totalValue += cost;
+        }
+    });
+    
+    const avgCost = totalOutfits > 0 ? Math.round(totalValue / totalOutfits) : 0;
+    
+    // Update stat displays
+    document.getElementById('total-outfits').textContent = totalOutfits;
+    document.getElementById('total-value').textContent = `$${totalValue}`;
+    document.getElementById('avg-cost').textContent = `$${avgCost}`;
+}
+</script>
+{% endblock %}

@@ -60,6 +60,10 @@ async def outfits_list(request: Request):
     # Check if this is an HTMX request
     is_htmx = request.headers.get('HX-Request') == 'true'
     template = "outfits/list_content.html" if is_htmx else "outfits/list.html"
+    
+    # Add debug info to help identify issues
+    print(f"Serving outfits list with template: {template}, HTMX request: {is_htmx}")
+    
     return templates.TemplateResponse(template, {"request": request})
 
 # COMPONENTS LIST
@@ -68,6 +72,10 @@ async def components_list(request: Request):
     # Check if this is an HTMX request
     is_htmx = request.headers.get('HX-Request') == 'true'
     template = "components/list_content.html" if is_htmx else "components/list.html"
+    
+    # Add debug info
+    print(f"Serving components list with template: {template}, HTMX request: {is_htmx}")
+    
     return templates.TemplateResponse(template, {"request": request})
 
 # NEW COMPONENT FORM - Explicitly defined with alternate path

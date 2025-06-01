@@ -113,12 +113,19 @@
             updateNavigation();
         });
         
+        // Also handle URL changes from HTMX pushState
+        document.body.addEventListener('htmx:pushUrl', function(evt) {
+            updateNavigation();
+        });
+        
         function updateNavigation() {
-            // Update active nav states based on current content
+            // Update active nav states based on current URL
             const navButtons = document.querySelectorAll('.nav-btn');
             navButtons.forEach(btn => btn.classList.remove('active'));
             
             const path = window.location.pathname;
+            console.log("Current path: ", path);
+            
             if (path.startsWith('/outfits')) {
                 document.querySelector('[href="/outfits"]').classList.add('active');
             } else if (path.startsWith('/components') || path.startsWith('/new-component')) {

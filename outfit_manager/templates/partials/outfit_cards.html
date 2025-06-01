@@ -52,13 +52,23 @@
             <span class="empty-icon">👗</span>
             <h3>No outfits found</h3>
             <p>Create your first outfit to get started!</p>
-            <button class="btn btn-primary" 
-                    hx-get="/forms/new-outfit" 
-                    hx-target="#modal-container .modal-content"
-                    onclick="showModal()">
-                Create Outfit
-            </button>
+            <a href="/outfits/new" class="btn btn-primary" 
+               hx-get="/outfits/new" 
+               hx-target="#main-content"
+               hx-push-url="true">
+                <span>➕</span> Create Outfit
+            </a>
         </div>
     </div>
     {% endif %}
 </div>
+
+<script>
+// Notify parent that outfit cards have loaded
+document.dispatchEvent(new CustomEvent('outfitCardsLoaded', {
+    detail: { 
+        count: {{ outfits|length }},
+        isEmpty: {% if not outfits %}true{% else %}false{% endif %}
+    }
+}));
+</script>

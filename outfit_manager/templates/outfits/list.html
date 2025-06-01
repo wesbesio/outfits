@@ -73,6 +73,21 @@
             <p>Loading outfits...</p>
         </div>
     </div>
+    
+    <!-- Empty state (hidden by default, shown via JavaScript) -->
+    <div id="empty-outfits-state" class="empty-state" style="display: none;">
+        <div class="empty-content">
+            <span class="empty-icon">👗</span>
+            <h3>No outfits found</h3>
+            <p>Create your first outfit to get started!</p>
+            <a href="/outfits/new" class="btn btn-primary" 
+               hx-get="/outfits/new" 
+               hx-target="#main-content"
+               hx-push-url="true">
+                <span>➕</span> Create Outfit
+            </a>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -80,6 +95,7 @@
 document.body.addEventListener('htmx:afterSwap', function(evt) {
     if (evt.target.id === 'outfits-grid') {
         updateOutfitStats();
+        checkEmptyState();
     }
 });
 
@@ -91,7 +107,8 @@ function updateOutfitStats() {
     outfitCards.forEach(card => {
         const costElement = card.querySelector('.card-price');
         if (costElement) {
-            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
+            const cost = parseInt(costElement.textContent.replace('
+{% endblock %}, '')) || 0;
             totalValue += cost;
         }
     });
@@ -100,8 +117,29 @@ function updateOutfitStats() {
     
     // Update stat displays
     document.getElementById('total-outfits').textContent = totalOutfits;
-    document.getElementById('total-value').textContent = `$${totalValue}`;
-    document.getElementById('avg-cost').textContent = `$${avgCost}`;
+    document.getElementById('total-value').textContent = `${totalValue}`;
+    document.getElementById('avg-cost').textContent = `${avgCost}`;
 }
+
+function checkEmptyState() {
+    const outfitCards = document.querySelectorAll('.outfit-card');
+    const outfitsGrid = document.getElementById('outfits-grid');
+    const emptyState = document.getElementById('empty-outfits-state');
+    
+    if (outfitCards.length === 0 && !outfitsGrid.querySelector('.empty-state')) {
+        // No outfits and no empty state in the grid - show our empty state
+        outfitsGrid.style.display = 'none';
+        emptyState.style.display = 'flex';
+    } else {
+        // Outfits exist or grid has its own empty state
+        outfitsGrid.style.display = 'grid';
+        emptyState.style.display = 'none';
+    }
+}
+
+// Run check on initial load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkEmptyState, 500); // Short delay to ensure grid is loaded
+});
 </script>
 {% endblock %}
