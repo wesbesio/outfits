@@ -8,7 +8,7 @@ from models.database import get_session
 from models import Outfit, Component, Vendor, Piece
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates")  # THIS WAS MISSING!
 
 # Test endpoint
 @router.get("/test/web-routes-working")
