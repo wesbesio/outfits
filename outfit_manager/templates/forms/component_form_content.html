@@ -1,5 +1,5 @@
 <!-- File: templates/forms/component_form_content.html -->
-<!-- Revision: 3.6 - Fix form submission to use JSON -->
+<!-- Revision: 4.0 - Simplified HTMX-focused image upload -->
 
 {% block content %}
 <div class="container">
@@ -27,31 +27,25 @@
         <div class="form">
             <form id="component-form"
                   hx-{% if is_edit %}put{% else %}post{% endif %}="/api/components{% if is_edit %}/{{ component.comid }}{% endif %}"
-                  hx-target="#main-content"
-                  hx-push-url="{% if is_edit %}/components/{{ component.comid }}{% else %}/components{% endif %}"
-                  onsubmit="basicUpload.submitForm('component-form', event); return false;">
+                  hx-encoding="multipart/form-data"
+                  hx-target="#main-content">
                 
                 <!-- Image Upload Section -->
                 <div class="form-group">
                     <label class="form-label">Component Photo</label>
                     <div class="upload-container">
-                        <!-- File input - hidden but accessible -->
-                        <input type="file" id="component-image-input" name="image_file" 
-                               accept="image/jpeg,image/png,image/webp" style="display: none;"
-                               onchange="basicUpload.handleFileSelect('component-image-input', 'component-preview-area', 'has-image')">
+                        <input type="file" id="component-image-input" name="file" 
+                               accept="image/jpeg,image/png,image/webp" 
+                               onchange="previewImage(this, 'component-preview')">
                         
-                        <!-- Upload button with direct onclick handler -->
-                        <button type="button" class="btn btn-primary" 
-                                onclick="basicUpload.openFilePicker('component-image-input'); return false;">
+                        <label for="component-image-input" class="upload-button btn btn-primary">
                             <span>📁</span> Select Image
-                        </button>
+                        </label>
                         
-                        <!-- Preview area - hidden initially -->
-                        <div id="component-preview-area" style="display: none; margin-top: 10px;"></div>
+                        <div id="component-preview" class="preview-area"></div>
                         
                         <p class="upload-help">JPEG, PNG, WebP up to 5MB</p>
                     </div>
-                    <input type="hidden" id="has-image" name="has_image" value="false">
                 </div>
                 
                 <div class="form-row">
@@ -156,6 +150,9 @@
                               placeholder="Care instructions, styling tips, or other notes...">{% if component %}{{ component.notes or '' }}{% endif %}</textarea>
                 </div>
                 
+                <!-- Flag (hidden) -->
+                <input type="hidden" name="flag" value="false">
+                
                 <div class="form-actions">
                     <button type="button" 
                             class="btn btn-secondary"
@@ -178,7 +175,7 @@
 </div>
 
 <style>
-/* Simple upload styles */
+/* Upload styles */
 .upload-container {
     border: 2px dashed #D1D5DB;
     border-radius: var(--radius-md);
@@ -188,6 +185,30 @@
     margin-bottom: var(--spacing-md);
 }
 
+.upload-container input[type="file"] {
+    display: none;
+}
+
+.upload-button {
+    display: inline-block;
+    cursor: pointer;
+    margin: var(--spacing-md) 0;
+}
+
+.preview-area {
+    margin-top: var(--spacing-md);
+    max-height: 200px;
+    overflow: hidden;
+    display: none;
+}
+
+.preview-area img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
 .upload-help {
     color: var(--text-muted);
     font-size: 0.875rem;
@@ -195,5 +216,37 @@
 }
 </style>
 
-<script src="/static/js/basic-upload.js"></script>
+<script>
+// Minimal JavaScript for image preview
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            preview.style.display = 'block';
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Radio button styling
+document.addEventListener('change', function(e) {
+    if (e.target.type === 'radio') {
+        const name = e.target.name;
+        const radioOptions = document.querySelectorAll(`input[name="${name}"]`);
+        radioOptions.forEach(option => {
+            const label = option.closest('.radio-option');
+            if (option.checked) {
+                label.classList.add('selected');
+            } else {
+                label.classList.remove('selected');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
