@@ -3,12 +3,20 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 from datetime import datetime
+import os
 
 from models.database import get_session
 from models import Outfit, Component, Vendor, Piece
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")  # THIS WAS MISSING!
+
+# Fix template path - since this file is in routers/, we need to go up one level
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+templates_dir = os.path.join(parent_dir, "templates")
+
+# Create templates instance with correct path
+templates = Jinja2Templates(directory=templates_dir)
 
 # Test endpoint
 @router.get("/test/web-routes-working")

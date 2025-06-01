@@ -99,5 +99,27 @@ async def debug_all_routes():
         "test_routes": test_routes
     }
 
+
+    # Add this test endpoint directly to main.py after the app creation
+# This will help us determine if the issue is with the web_routes router or something else
+
+@app.get("/test/direct-component-form", response_class=HTMLResponse)
+async def test_direct_component_form(request: Request):
+    """Test component form directly in main app"""
+    templates = Jinja2Templates(directory="templates")
+    
+    fake_data = {
+        "request": request,
+        "component": None,
+        "vendors": [{"venid": 1, "name": "Test Vendor"}],
+        "pieces": [{"piecid": 1, "name": "Test Piece"}],
+        "is_edit": False,
+        "page_title": "Direct Test"
+    }
+    
+    return templates.TemplateResponse("forms/component_form.html", fake_data)
+
+    
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
