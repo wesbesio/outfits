@@ -1,5 +1,5 @@
 <!-- File: templates/forms/outfit_form.html -->
-<!-- Revision: 3.1 - Add image upload functionality to creation form -->
+<!-- Revision: 3.6 - Fix form submission to use JSON -->
 
 {% extends "base.html" %}
 
@@ -32,24 +32,28 @@
             <form id="outfit-form"
                   hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
                   hx-target="#main-content"
-                  hx-swap="innerHTML"
                   hx-push-url="{% if is_edit %}/outfits/{{ outfit.outid }}{% else %}/outfits{% endif %}"
-                  hx-on::after-request="handleFormSubmit(event)"
-                  enctype="multipart/form-data">
+                  onsubmit="basicUpload.submitForm('outfit-form', event); return false;">
                 
                 <!-- Image Upload Section -->
                 <div class="form-group">
                     <label class="form-label">Outfit Photo</label>
-                    <div class="image-upload-container" id="outfit-image-upload">
-                        <div class="upload-content">
-                            <span class="upload-icon">📁</span>
-                            <p class="upload-text">
-                                <strong>Click to upload</strong> or drag and drop<br>
-                                <small>JPEG, PNG, WebP up to 5MB</small>
-                            </p>
-                        </div>
+                    <div class="upload-container">
+                        <!-- File input - hidden but accessible -->
                         <input type="file" id="outfit-image-input" name="image_file" 
-                               accept="image/jpeg,image/png,image/webp" style="display: none;">
+                               accept="image/jpeg,image/png,image/webp" style="display: none;"
+                               onchange="basicUpload.handleFileSelect('outfit-image-input', 'outfit-preview-area', 'has-image')">
+                        
+                        <!-- Upload button with direct onclick handler -->
+                        <button type="button" class="btn btn-primary" 
+                                onclick="basicUpload.openFilePicker('outfit-image-input'); return false;">
+                            <span>📁</span> Select Image
+                        </button>
+                        
+                        <!-- Preview area - hidden initially -->
+                        <div id="outfit-preview-area" style="display: none; margin-top: 10px;"></div>
+                        
+                        <p class="upload-help">JPEG, PNG, WebP up to 5MB</p>
                     </div>
                     <input type="hidden" id="has-image" name="has_image" value="false">
                 </div>
@@ -155,6 +159,22 @@
     animation: slideUp 0.3s ease-out;
 }
 
+/* Simple upload styles */
+.upload-container {
+    border: 2px dashed #D1D5DB;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    background: #F9FAFB;
+    margin-bottom: var(--spacing-md);
+}
+
+.upload-help {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-sm);
+}
+
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -179,14 +199,5 @@
 }
 </style>
 
-<script src="/static/js/form-image-upload.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize image upload
-    const uploadContainer = document.getElementById('outfit-image-upload');
-    if (uploadContainer) {
-        initializeFormImageUpload(uploadContainer, 'outfit');
-    }
-});
-</script>
+<script src="/static/js/basic-upload.js"></script>
 {% endblock %}

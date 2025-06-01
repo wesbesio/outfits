@@ -1,13 +1,13 @@
-<!-- File: templates/forms/vendor_form_content.html -->
-<!-- Content-only template for HTMX requests -->
+<!-- File: templates/forms/outfit_form_content.html -->
+<!-- Revision: 3.3 - Completely simplified image upload approach -->
 
 {% block content %}
 <div class="container">
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb-nav">
-        <a href="/components" class="breadcrumb-link" 
-           hx-get="/components" hx-target="#main-content" hx-push-url="true">
-            ← Back to Components
+        <a href="/outfits" class="breadcrumb-link" 
+           hx-get="/outfits" hx-target="#main-content" hx-push-url="true">
+            ← Back to Outfits
         </a>
     </div>
 
@@ -17,80 +17,107 @@
             <h1 class="form-page-title">{{ page_title }}</h1>
             <p class="form-page-subtitle">
                 {% if is_edit %}
-                    Update vendor information and settings
+                    Update your outfit details and settings
                 {% else %}
-                    Add a new vendor to organize your shopping sources
+                    Create a new outfit to organize your components
                 {% endif %}
             </p>
         </div>
         
         <div class="form">
-            <form hx-{% if is_edit %}put{% else %}post{% endif %}="/api/vendors{% if is_edit %}/{{ vendor.venid }}{% endif %}"
+            <form id="outfit-form"
+                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
                   hx-target="#main-content"
                   hx-swap="innerHTML"
-                  hx-push-url="/components"
-                  hx-on::after-request="if(event.detail.successful) { showToast('Vendor saved successfully!', 'success'); }">
+                  hx-push-url="{% if is_edit %}/outfits/{{ outfit.outid }}{% else %}/outfits{% endif %}">
                 
+                <!-- Image Upload Section -->
                 <div class="form-group">
-                    <label for="vendor-name" class="form-label">Vendor Name *</label>
-                    <input type="text" 
-                           id="vendor-name" 
-                           name="name" 
-                           class="form-input" 
-                           value="{% if vendor %}{{ vendor.name }}{% endif %}" 
-                           required
-                           placeholder="e.g. Amazon, Poshmark, Zara, Local Boutique">
+                    <label class="form-label">Outfit Photo</label>
+                    <div class="upload-container" id="outfit-upload-container">
+                        <input type="file" id="outfit-image-input" name="image_file" 
+                               accept="image/jpeg,image/png,image/webp">
+                        <button type="button" class="btn btn-secondary upload-button">
+                            <span>📁</span> Select Image
+                        </button>
+                        <div class="preview-area"></div>
+                        <p class="upload-help">JPEG, PNG, WebP up to 5MB</p>
+                    </div>
+                    <input type="hidden" id="has-image" name="has_image" value="false">
                 </div>
                 
                 <div class="form-group">
-                    <label for="vendor-description" class="form-label">Description</label>
-                    <textarea id="vendor-description" 
+                    <label for="outfit-name" class="form-label">Outfit Name *</label>
+                    <input type="text" 
+                           id="outfit-name" 
+                           name="name" 
+                           class="form-input" 
+                           value="{% if outfit %}{{ outfit.name }}{% endif %}" 
+                           required
+                           placeholder="e.g. Summer Casual, Work Meeting, Date Night">
+                </div>
+                
+                <div class="form-group">
+                    <label for="outfit-description" class="form-label">Description</label>
+                    <textarea id="outfit-description" 
                               name="description" 
                               class="form-textarea" 
-                              placeholder="Describe this vendor - what they sell, price range, quality, etc...">{% if vendor %}{{ vendor.description or '' }}{% endif %}</textarea>
+                              placeholder="Describe this outfit, when to wear it, or special notes...">{% if outfit %}{{ outfit.description or '' }}{% endif %}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="outfit-vendor" class="form-label">Primary Vendor</label>
+                    <select id="outfit-vendor" name="vendorid" class="form-select">
+                        <option value="">Select vendor...</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.venid }}" 
+                                {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
+                            {{ vendor.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-help">Optional: Choose the main vendor where you got most components</small>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Status</label>
                     <div class="radio-group">
-                        <label class="radio-option {% if not vendor or vendor.active %}selected{% endif %}">
+                        <label class="radio-option {% if not outfit or outfit.active %}selected{% endif %}">
                             <input type="radio" name="active" value="true" 
-                                   {% if not vendor or vendor.active %}checked{% endif %}>
+                                   {% if not outfit or outfit.active %}checked{% endif %}>
                             <span>Active</span>
-                            <small>Currently shopping from this vendor</small>
+                            <small>Can be worn and shown in lists</small>
                         </label>
-                        <label class="radio-option {% if vendor and not vendor.active %}selected{% endif %}">
+                        <label class="radio-option {% if outfit and not outfit.active %}selected{% endif %}">
                             <input type="radio" name="active" value="false" 
-                                   {% if vendor and not vendor.active %}checked{% endif %}>
-                            <span>Inactive</span>
-                            <small>No longer using this vendor</small>
+                                   {% if outfit and not outfit.active %}checked{% endif %}>
+                            <span>Retired</span>
+                            <small>Hidden from active lists</small>
                         </label>
                     </div>
                 </div>
                 
-                <div class="vendor-info-box">
-                    <h3>💡 Why Add Vendors?</h3>
-                    <ul>
-                        <li>Track where you buy your clothes</li>
-                        <li>Organize components by shopping source</li>
-                        <li>Remember favorite stores and websites</li>
-                        <li>Calculate spending by vendor</li>
-                    </ul>
+                <div class="form-group">
+                    <label for="outfit-notes" class="form-label">Notes</label>
+                    <textarea id="outfit-notes" 
+                              name="notes" 
+                              class="form-textarea" 
+                              placeholder="Any additional notes, care instructions, or reminders...">{% if outfit %}{{ outfit.notes or '' }}{% endif %}</textarea>
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" 
                             class="btn btn-secondary"
-                            hx-get="/components"
+                            hx-get="/outfits"
                             hx-target="#main-content"
                             hx-push-url="true">
                         Cancel
                     </button>
                     <button type="submit" class="btn btn-primary">
                         {% if is_edit %}
-                            <span>💾</span> Update Vendor
+                            <span>💾</span> Update Outfit
                         {% else %}
-                            <span>✨</span> Create Vendor
+                            <span>✨</span> Create Outfit
                         {% endif %}
                     </button>
                 </div>
@@ -98,4 +125,52 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Simple upload styles */
+.upload-container {
+    border: 2px dashed #D1D5DB;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    background: #F9FAFB;
+    margin-bottom: var(--spacing-md);
+}
+
+.upload-container.dragover {
+    border-color: var(--primary-color);
+    background: var(--accent-color);
+}
+
+.upload-container input[type="file"] {
+    display: none;
+}
+
+.upload-button {
+    margin: var(--spacing-md) 0;
+}
+
+.preview-area {
+    display: none;
+    margin-top: var(--spacing-md);
+    max-width: 300px;
+    max-height: 300px;
+    margin: 0 auto;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.upload-help {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-sm);
+}
+</style>
+
+<script src="/static/js/simple-upload.js"></script>
 {% endblock %}
