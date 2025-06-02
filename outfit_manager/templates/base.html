@@ -1,0 +1,78 @@
+<!-- File: templates/base.html -->
+<!-- Revision: 1.0 - Base template with HTMX integration -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Outfit Manager{% endblock %}</title>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    <!-- Meta tags for mobile -->
+    <meta name="description" content="Modern fashion outfit management system">
+    <meta name="theme-color" content="#8B5CF6">
+</head>
+<body class="bg-gradient">
+    <!-- Header Navigation -->
+    <header class="header">
+        <nav class="nav-container">
+            <div class="nav-brand">
+                <h1>👗 Outfit Manager</h1>
+            </div>
+            
+            <div class="nav-links">
+                <a href="/" hx-get="/" hx-target="#main-content" hx-swap="innerHTML" class="nav-link">Home</a>
+                <a href="/components" hx-get="/api/components/" hx-target="#main-content" hx-swap="innerHTML" class="nav-link">Components</a>
+                <a href="/outfits" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="innerHTML" class="nav-link">Outfits</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="main-content">
+        {% block content %}
+        <div class="welcome-container">
+            <h2>Welcome to Outfit Manager</h2>
+            <p>Organize your wardrobe with style!</p>
+            
+            <div class="action-cards">
+                <div class="action-card" hx-get="/api/components/" hx-target="#main-content" hx-swap="innerHTML">
+                    <h3>📦 Components</h3>
+                    <p>Manage your clothing items</p>
+                </div>
+                
+                <div class="action-card" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="innerHTML">
+                    <h3>👕 Outfits</h3>
+                    <p>Create and organize outfits</p>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </main>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="/" hx-get="/" hx-target="#main-content" hx-swap="innerHTML" class="bottom-nav-item">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Home</span>
+        </a>
+        <a href="/components" hx-get="/api/components/" hx-target="#main-content" hx-swap="innerHTML" class="bottom-nav-item">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Components</span>
+        </a>
+        <a href="/outfits" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="innerHTML" class="bottom-nav-item">
+            <span class="nav-icon">👕</span>
+            <span class="nav-label">Outfits</span>
+        </a>
+    </nav>
+
+    <!-- Custom JavaScript -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

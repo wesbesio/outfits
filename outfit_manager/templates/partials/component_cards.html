@@ -1,0 +1,155 @@
+<!-- File: templates/partials/component_cards.html -->
+<!-- Revision: 1.0 - Component cards partial for reuse -->
+
+{% if title %}
+<div class="cards-header">
+    <h3>{{ title }}</h3>
+</div>
+{% endif %}
+
+<div class="component-cards">
+    {% if components %}
+        {% for component in components %}
+        <div class="component-card mini" 
+             hx-get="/api/components/{{ component.comid }}" 
+             hx-target="#main-content" 
+             hx-swap="innerHTML">
+            
+            <div class="card-image-mini">
+                {% if component.has_image %}
+                <img src="/api/images/components/{{ component.comid }}?thumbnail=true" 
+                     alt="{{ component.name }}" 
+                     loading="lazy">
+                {% else %}
+                <div class="placeholder-image-mini">
+                    <span class="placeholder-icon">📦</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-content-mini">
+                <h4 class="card-title-mini">{{ component.name }}</h4>
+                {% if component.brand %}
+                <p class="card-brand-mini">{{ component.brand }}</p>
+                {% endif %}
+                <p class="card-cost-mini">{{ format_currency(component.cost) }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state-mini">
+            <p>No components found</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.cards-header {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.cards-header h3 {
+    color: var(--primary-color);
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.component-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.component-card.mini {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.component-card.mini:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-light);
+}
+
+.card-image-mini {
+    height: 120px;
+    background: var(--primary-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.card-image-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.placeholder-image-mini {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.placeholder-image-mini .placeholder-icon {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.card-content-mini {
+    padding: var(--spacing-md);
+}
+
+.card-title-mini {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.3;
+}
+
+.card-brand-mini {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.card-cost-mini {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.empty-state-mini {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .component-cards {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .card-image-mini {
+        height: 100px;
+    }
+    
+    .card-content-mini {
+        padding: var(--spacing-sm);
+    }
+}
+</style>
