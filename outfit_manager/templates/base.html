@@ -1,3 +1,7 @@
+<!-- HTML--->
+<!-- File: outfit_manager/templates/base.html--->
+<!--Revision: 4.3 - with htmx config logger--->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,13 +39,20 @@
         <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
             <span>👔</span> Outfits
         </a>
-        <!-- 
-        <a href="/stats/" hx-get="/stats/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
-            <span>📊</span> Statistics
-        </a> Removed Stats Link
-        -->
         </nav>
+
+    <script>
+        // HTMX Request Configuration Logger
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            console.log("HTMX Request Configuration Details:", evt.detail);
+            console.log("Element that triggered this request (evt.detail.elt):", evt.detail.elt);
+            if (evt.detail.triggeringEvent) {
+                console.log("Triggering event type:", evt.detail.triggeringEvent.type);
+            }
+        });
+    </script>
     <script src="/static/js/form-error-handler.js" defer></script>
     <script src="/static/js/image-preview.js" defer></script>
 </body>
 </html>
+

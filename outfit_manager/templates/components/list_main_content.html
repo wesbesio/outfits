@@ -1,6 +1,11 @@
 <div class="page-header">
     <h2>Components</h2>
-    <a href="/components/new" class="btn btn-primary" hx-get="/components/new" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <a href="/components/new" 
+       class="btn btn-primary" 
+       hx-get="/components/new" 
+       hx-target="#main-content" 
+       hx-swap="innerHTML">
+       {# Removed hx-push-url="true" #}
         Add New Component
     </a>
 </div>
@@ -33,7 +38,7 @@
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
         </select>
-        </form>
+    </form>
 </div>
 
 <div id="component-list-container" hx-get="/api/components/" hx-trigger="load" hx-swap="outerHTML">
