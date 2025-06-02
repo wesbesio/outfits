@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+# File: routers/pieces.py
+# Revision: 1.1 - Add HTML response support for HTMX
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from fastapi.responses import JSONResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional, Union
 from datetime import datetime
 
 from models.database import get_session
@@ -11,11 +14,13 @@ from models import Piece, PieceCreate
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-@router.get("/", response_model=List[Piece])
+@router.get("/")
 async def get_pieces(
+    request: Request = None,
     skip: int = 0,
     limit: int = 100,
     active_only: bool = True,
+    accept: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """Get list of piece types"""
@@ -26,6 +31,18 @@ async def get_pieces(
     
     query = query.offset(skip).limit(limit)
     pieces = session.exec(query).all()
+    
+    # Check if we need to return HTML
+    is_htmx_request = request and request.headers.get("HX-Request") == "true"
+    wants_html = accept and "text/html" in accept
+    
+    if is_htmx_request or wants_html:
+        # Return HTML content
+        content = templates.get_template("partials/piece_options.html").render({
+            "request": request,
+            "pieces": pieces
+        })
+        return HTMLResponse(content=content)
     
     return pieces
 

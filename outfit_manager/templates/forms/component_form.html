@@ -1,5 +1,5 @@
 <!-- File: templates/forms/component_form.html -->
-<!-- Revision: 4.0 - Simplified HTMX-focused image upload -->
+<!-- Revision: 4.1 - Fixed form submission URL and added error handling -->
 
 {% extends "base.html" %}
 
@@ -30,9 +30,11 @@
         
         <div class="form">
             <form id="component-form"
-                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/components{% if is_edit %}/{{ component.comid }}{% endif %}"
+                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/components/{% if is_edit %}{{ component.comid }}{% endif %}"
                   hx-encoding="multipart/form-data"
-                  hx-target="#main-content">
+                  hx-target="#main-content"
+                  hx-swap="outerHTML"
+                  hx-indicator="#form-indicator">
                 
                 <!-- Image Upload Section -->
                 <div class="form-group">
@@ -156,6 +158,12 @@
                 
                 <!-- Flag (hidden) -->
                 <input type="hidden" name="flag" value="false">
+                
+                <!-- Hidden loading indicator -->
+                <div id="form-indicator" class="htmx-indicator loading-state">
+                    <div class="spinner"></div>
+                    <p>Saving component...</p>
+                </div>
                 
                 <div class="form-actions">
                     <button type="button" 

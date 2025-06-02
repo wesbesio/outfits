@@ -1,11 +1,13 @@
 # File: routers/components.py
-# Revision: 4.0 - Add multipart form data support for combined component+image creation
+# Revision: 4.2 - Fix HTML rendering for components list
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, Header
 from fastapi.responses import JSONResponse, HTMLResponse, Response
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime
+import traceback
 
 from models.database import get_session
 from models import (
@@ -15,69 +17,82 @@ from models import (
 from services.image_service import ImageService
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
-# [Keep existing GET endpoints]
-
-@router.post("/")
-async def create_component(
-    name: str = Form(...),
-    cost: int = Form(...),
-    active: bool = Form(True),
-    flag: bool = Form(False),
-    description: Optional[str] = Form(None),
-    brand: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    vendorid: Optional[int] = Form(None),
-    piecid: Optional[int] = Form(None),
-    file: Optional[UploadFile] = File(None),
+@router.get("/", response_class=Union[List[ComponentResponse], HTMLResponse])
+async def get_components(
+    request: Request = None,
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = True,
+    sort_by: str = "name",
+    filter_vendor: Optional[int] = None,
+    filter_piece: Optional[int] = None,
+    accept: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
-    """Create new component with optional image in one request"""
-    # Validate vendor and piece if provided
-    if vendorid:
-        vendor = session.get(Vendor, vendorid)
-        if not vendor:
-            raise HTTPException(status_code=404, detail="Vendor not found")
+    """Get list of components with optional filtering and sorting"""
+    # Debug information
+    print(f"GET /api/components request received")
+    print(f"Headers: Accept={accept}")
+    print(f"Query params: sort_by={sort_by}, active_only={active_only}")
+    print(f"Filter params: vendor={filter_vendor}, piece={filter_piece}")
     
-    if piecid:
-        piece = session.get(Piece, piecid)
-        if not piece:
-            raise HTTPException(status_code=404, detail="Piece type not found")
+    query = select(Component)
     
-    # Create component data
-    component_data = {
-        "name": name,
-        "cost": cost,
-        "active": active,
-        "flag": flag,
-        "description": description,
-        "brand": brand,
-        "notes": notes,
-        "vendorid": vendorid,
-        "piecid": piecid,
-    }
+    # Apply filters
+    if active_only:
+        query = query.where(Component.active == True)
     
-    # Create the component
-    db_component = Component(**component_data)
-    session.add(db_component)
-    session.commit()
-    session.refresh(db_component)
+    if filter_vendor:
+        query = query.where(Component.vendorid == filter_vendor)
     
-    # Process image if provided
-    if file:
-        try:
-            processed_image = await ImageService.validate_and_process_image(file)
-            db_component.image = processed_image
-            db_component.modified = datetime.now()
-            session.add(db_component)
-            session.commit()
-        except Exception as e:
-            # Log the error but continue - component was created successfully
-            print(f"Error processing image: {str(e)}")
+    if filter_piece:
+        query = query.where(Component.piecid == filter_piece)
     
-    # Return HTMX redirect to components list
-    response = Response(status_code=200)
-    response.headers["HX-Redirect"] = "/components"
-    return response
-
-# [Keep the rest of the file unchanged]
+    # Apply sorting
+    if sort_by == "cost":
+        query = query.order_by(Component.cost.desc())
+    elif sort_by == "brand":
+        query = query.order_by(Component.brand)
+    elif sort_by == "created":
+        query = query.order_by(Component.creation.desc())
+    elif sort_by == "modified":
+        query = query.order_by(Component.modified.desc())
+    else:  # Default to name
+        query = query.order_by(Component.name)
+    
+    # Apply pagination
+    query = query.offset(skip).limit(limit)
+    
+    # Execute query
+    components = session.exec(query).all()
+    
+    # Prepare component responses with additional data
+    component_responses = []
+    for component in components:
+        component_response = ComponentResponse(
+            **component.model_dump(),
+            has_image=component.image is not None,
+            vendor_name=component.vendor.name if component.vendor else None,
+            piece_name=component.piece.name if component.piece else None
+        )
+        component_responses.append(component_response)
+    
+    # Determine if we need to return HTML or JSON
+    is_htmx_request = request and request.headers.get("HX-Request") == "true"
+    wants_html = accept and "text/html" in accept
+    print(f"Is HTMX request: {is_htmx_request}, Wants HTML: {wants_html}")
+    
+    if is_htmx_request or wants_html:
+        print("Returning HTML response")
+        # Return HTML content from template
+        content = templates.get_template("partials/component_cards.html").render({
+            "request": request, 
+            "components": component_responses
+        })
+        return HTMLResponse(content=content)
+    else:
+        print("Returning JSON response")
+        # Return JSON response
+        return component_responses

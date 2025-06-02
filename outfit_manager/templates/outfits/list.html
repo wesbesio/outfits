@@ -23,9 +23,10 @@
         <div class="sort-options">
             <label for="sort-by" class="control-label">Sort by:</label>
             <select id="sort-by" class="form-select" 
-                    hx-get="/api/outfits" 
+                    hx-get="/api/outfits/" 
                     hx-target="#outfits-grid"
-                    hx-include="[name='filter-active']">
+                    hx-include="[name='filter-active']"
+                    hx-headers='{"Accept": "text/html"}'>
                 <option value="name">Name</option>
                 <option value="cost">Total Cost</option>
                 <option value="created">Date Created</option>
@@ -36,9 +37,10 @@
         <div class="filter-options">
             <label class="control-label">
                 <input type="checkbox" name="filter-active" value="true" checked
-                       hx-get="/api/outfits" 
+                       hx-get="/api/outfits/" 
                        hx-target="#outfits-grid"
-                       hx-include="[name='sort-by']">
+                       hx-include="[name='sort-by']"
+                       hx-headers='{"Accept": "text/html"}'>
                 Active Only
             </label>
         </div>
@@ -62,13 +64,14 @@
 
     <!-- Outfits Grid -->
     <div id="outfits-grid" 
-         hx-get="/api/outfits" 
+         hx-get="/api/outfits/" 
          hx-trigger="load"
          hx-target="this"
          hx-swap="innerHTML"
-         hx-headers='{"Accept": "text/html"}'>
+         hx-headers='{"Accept": "text/html"}'
+         hx-indicator="#grid-loader">
         <!-- Loading state -->
-        <div class="loading-state">
+        <div id="grid-loader" class="loading-state">
             <div class="spinner"></div>
             <p>Loading outfits...</p>
         </div>
@@ -107,8 +110,7 @@ function updateOutfitStats() {
     outfitCards.forEach(card => {
         const costElement = card.querySelector('.card-price');
         if (costElement) {
-            const cost = parseInt(costElement.textContent.replace('
-{% endblock %}, '')) || 0;
+            const cost = parseInt(costElement.textContent.replace('$', '')) || 0;
             totalValue += cost;
         }
     });
@@ -117,8 +119,8 @@ function updateOutfitStats() {
     
     // Update stat displays
     document.getElementById('total-outfits').textContent = totalOutfits;
-    document.getElementById('total-value').textContent = `${totalValue}`;
-    document.getElementById('avg-cost').textContent = `${avgCost}`;
+    document.getElementById('total-value').textContent = `$${totalValue}`;
+    document.getElementById('avg-cost').textContent = `$${avgCost}`;
 }
 
 function checkEmptyState() {

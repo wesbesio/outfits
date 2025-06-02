@@ -1,5 +1,5 @@
 <!-- File: templates/forms/outfit_form.html -->
-<!-- Revision: 4.0 - Simplified HTMX-focused image upload -->
+<!-- Revision: 4.2 - Fixed form submission URL and loading indicators -->
 
 {% extends "base.html" %}
 
@@ -30,9 +30,11 @@
         
         <div class="form">
             <form id="outfit-form"
-                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits{% if is_edit %}/{{ outfit.outid }}{% endif %}"
+                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/outfits/{% if is_edit %}{{ outfit.outid }}{% endif %}"
                   hx-encoding="multipart/form-data"
-                  hx-target="#main-content">
+                  hx-target="#main-content"
+                  hx-swap="outerHTML"
+                  hx-indicator="#form-indicator">
                 
                 <!-- Image Upload Section -->
                 <div class="form-group">
@@ -113,6 +115,12 @@
                 
                 <!-- Flag (hidden) -->
                 <input type="hidden" name="flag" value="false">
+                
+                <!-- Hidden loading indicator -->
+                <div id="form-indicator" class="htmx-indicator loading-state">
+                    <div class="spinner"></div>
+                    <p>Saving outfit...</p>
+                </div>
                 
                 <div class="form-actions">
                     <button type="button" 

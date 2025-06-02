@@ -1,3 +1,6 @@
+<!-- File: templates/components/list.html -->
+<!-- Revision: 4.1 - Fix HTMX content negotiation for component grid -->
+
 {% extends "base.html" %}
 
 {% block title %}Components - Outfit Manager{% endblock %}
@@ -8,9 +11,9 @@
     <div class="page-header">
         <h2 class="page-title">Your Components</h2>
         <div class="page-actions">
-            <a href="/components/new" 
+            <a href="/new-component" 
                class="btn btn-primary" 
-               hx-get="/components/new" 
+               hx-get="/new-component" 
                hx-target="#main-content"
                hx-push-url="true">
                 <span>➕</span> New Component
@@ -23,9 +26,10 @@
         <div class="sort-options">
             <label for="sort-by" class="control-label">Sort by:</label>
             <select id="sort-by" class="form-select" 
-                    hx-get="/api/components" 
+                    hx-get="/api/components/" 
                     hx-target="#components-grid"
-                    hx-include="[name='filter-active'], [name='filter-vendor'], [name='filter-piece']">
+                    hx-include="[name='filter-active'], [name='filter-vendor'], [name='filter-piece']"
+                    hx-headers='{"Accept": "text/html"}'>
                 <option value="name">Name</option>
                 <option value="cost">Cost</option>
                 <option value="brand">Brand</option>
@@ -37,9 +41,10 @@
         <div class="filter-options">
             <label class="control-label">
                 <input type="checkbox" name="filter-active" value="true" checked
-                       hx-get="/api/components" 
+                       hx-get="/api/components/" 
                        hx-target="#components-grid"
-                       hx-include="[name='sort-by'], [name='filter-vendor'], [name='filter-piece']">
+                       hx-include="[name='sort-by'], [name='filter-vendor'], [name='filter-piece']"
+                       hx-headers='{"Accept": "text/html"}'>
                 Active Only
             </label>
         </div>
@@ -50,9 +55,10 @@
         <div class="filter-group">
             <label for="filter-vendor" class="control-label">Vendor:</label>
             <select id="filter-vendor" name="filter-vendor" class="form-select"
-                    hx-get="/api/components" 
+                    hx-get="/api/components/" 
                     hx-target="#components-grid"
-                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-piece']">
+                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-piece']"
+                    hx-headers='{"Accept": "text/html"}'>
                 <option value="">All Vendors</option>
                 <!-- Vendor options loaded via HTMX -->
             </select>
@@ -61,9 +67,10 @@
         <div class="filter-group">
             <label for="filter-piece" class="control-label">Piece Type:</label>
             <select id="filter-piece" name="filter-piece" class="form-select"
-                    hx-get="/api/components" 
+                    hx-get="/api/components/" 
                     hx-target="#components-grid"
-                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-vendor']">
+                    hx-include="[name='sort-by'], [name='filter-active'], [name='filter-vendor']"
+                    hx-headers='{"Accept": "text/html"}'>
                 <option value="">All Types</option>
                 <!-- Piece type options loaded via HTMX -->
             </select>
@@ -96,13 +103,14 @@
 
     <!-- Components Grid -->
     <div id="components-grid" 
-         hx-get="/api/components" 
+         hx-get="/api/components/" 
          hx-trigger="load"
          hx-target="this"
          hx-swap="innerHTML"
-         hx-headers='{"Accept": "text/html"}'>
+         hx-headers='{"Accept": "text/html"}'
+         hx-indicator="#grid-loader">
         <!-- Loading state -->
-        <div class="loading-state">
+        <div id="grid-loader" class="loading-state">
             <div class="spinner"></div>
             <p>Loading components...</p>
         </div>
@@ -326,12 +334,17 @@ function clearFilters() {
     document.getElementById('sort-by').value = 'name';
     
     // Trigger reload
-    htmx.trigger('#components-grid', 'refresh');
+    htmx.ajax('GET', '/api/components/', {
+        target: '#components-grid',
+        swap: 'innerHTML',
+        headers: {'Accept': 'text/html'}
+    });
 }
 
 // Update stats when components load
 document.body.addEventListener('htmx:afterSwap', function(evt) {
     if (evt.target.id === 'components-grid') {
+        console.log('Components loaded, updating stats');
         updateComponentStats();
     }
 });
@@ -368,17 +381,17 @@ function updateComponentStats() {
 // Load vendor and piece options on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Load vendors for filter
-    htmx.ajax('GET', '/api/vendors', {
+    htmx.ajax('GET', '/api/vendors/', {
         target: '#filter-vendor',
         swap: 'innerHTML',
-        source: '#filter-vendor'
+        headers: {'Accept': 'text/html'}
     });
     
     // Load piece types for filter
-    htmx.ajax('GET', '/api/pieces', {
+    htmx.ajax('GET', '/api/pieces/', {
         target: '#filter-piece',
         swap: 'innerHTML',
-        source: '#filter-piece'
+        headers: {'Accept': 'text/html'}
     });
 });
 </script>
