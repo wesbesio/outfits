@@ -1,0 +1,111 @@
+<!-- File: templates/partials/component_outfits.html -->
+<!-- Revision: 1.0 - Add template for displaying outfits using a component -->
+
+{% if has_outfits %}
+<div class="outfit-cards">
+    {% for outfit in outfits %}
+    <div class="outfit-card-mini" 
+         hx-get="/outfits/{{ outfit.outid }}" 
+         hx-target="#main-content" 
+         hx-push-url="true">
+        <div class="outfit-card-image">
+            {% if outfit.has_image %}
+                <img src="/api/images/outfit/{{ outfit.outid }}?thumbnail=true" 
+                     alt="{{ outfit.name }}" 
+                     loading="lazy">
+            {% else %}
+                <div class="card-image-placeholder mini">
+                    👗
+                </div>
+            {% endif %}
+        </div>
+        <div class="outfit-card-content">
+            <h4 class="outfit-card-title">{{ outfit.name }}</h4>
+            <span class="outfit-card-cost">${{ outfit.totalcost }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state smaller">
+    <div class="empty-content">
+        <span class="empty-icon">👗</span>
+        <h3>Not used in any outfits</h3>
+        <p>This component isn't part of any outfits yet.</p>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.outfit-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.outfit-card-mini {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.outfit-card-mini:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.outfit-card-image {
+    height: 120px;
+    overflow: hidden;
+}
+
+.outfit-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-image-placeholder.mini {
+    height: 100%;
+    font-size: 2rem;
+}
+
+.outfit-card-content {
+    padding: var(--spacing-md);
+}
+
+.outfit-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+}
+
+.outfit-card-cost {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.empty-state.smaller {
+    min-height: 150px;
+    padding: var(--spacing-lg);
+}
+
+.empty-state.smaller .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.empty-state.smaller h3 {
+    font-size: 1.25rem;
+}
+
+.empty-state.smaller p {
+    font-size: 0.875rem;
+}
+</style>

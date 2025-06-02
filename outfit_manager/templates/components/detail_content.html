@@ -1,9 +1,5 @@
-<!-- File: templates/components/detail.html -->
-<!-- Revision: 1.1 - Component detail template with improved outfits section -->
-
-{% extends "base.html" %}
-
-{% block title %}{{ component.name }} - Outfit Manager{% endblock %}
+<!-- File: templates/components/detail_content.html -->
+<!-- Revision: 1.1 - Content-only version of component detail template with improved outfits section -->
 
 {% block content %}
 <div class="container">
@@ -88,12 +84,6 @@
                     <div class="detail-actions">
                         <button class="btn btn-primary" onclick="enterEditMode()">
                             <span>✏️</span> Edit Component
-                        </button>
-                        <button class="btn btn-secondary" 
-                                hx-get="/components/{{ component.comid }}/outfits"
-                                hx-target="#modal-container .modal-content"
-                                onclick="showModal()">
-                            <span>👕</span> View Outfits
                         </button>
                     </div>
                 </div>
@@ -350,11 +340,5 @@ document.addEventListener('change', function(e) {
         });
     }
 });
-
-// This function is referenced but not defined
-function showModal() {
-    alert("Modal functionality is not implemented");
-    // Typically would show a modal with outfit details
-}
 </script>
 {% endblock %}

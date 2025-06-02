@@ -1,5 +1,5 @@
 # File: main.py
-# Revision: 3.1 - Remove web_routes import and fix loading issues
+# Revision: 3.5 - Add direct endpoint for component outfits
 
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import Request, FastAPI, Depends, HTTPException
@@ -11,7 +11,7 @@ import traceback
 
 from models.database import create_db_and_tables, get_session
 from sqlmodel import Session, select
-from models import Outfit, Component, Vendor, Piece
+from models import Outfit, Component, Vendor, Piece, ComponentResponse
 from services.seed_data import create_seed_data
 
 @asynccontextmanager
@@ -178,6 +178,80 @@ async def debug_routes(request: Request):
     </html>
     """
 
+# File: main.py
+# Revision: 3.4 - Fix component detail route to handle HTMX requests
+
+@app.get("/components/{component_id}", response_class=HTMLResponse)
+async def component_detail(request: Request, component_id: int, session: Session = Depends(get_session)):
+    """Render the component detail page"""
+    try:
+        # Get component by ID
+        component = session.get(Component, component_id)
+        
+        if not component:
+            raise HTTPException(status_code=404, detail="Component not found")
+        
+        # Create component response with additional data
+        component_response = ComponentResponse(
+            **component.model_dump(),
+            has_image=component.image is not None,
+            vendor_name=component.vendor.name if component.vendor else None,
+            piece_name=component.piece.name if component.piece else None
+        )
+        
+        # Check if this is an HTMX request
+        is_htmx = request.headers.get('HX-Request') == 'true'
+        template = "components/detail_content.html" if is_htmx else "components/detail.html"
+        
+        # For debugging
+        print(f"Serving component detail for component_id: {component_id}, is_htmx: {is_htmx}, template: {template}")
+        
+        return templates.TemplateResponse(template, {
+            "request": request,
+            "component": component_response
+        })
+    except Exception as e:
+        error_msg = f"Error in component_detail: {str(e)}"
+        print(error_msg)
+        traceback.print_exc()
+        return HTMLResponse(f"""
+        <html>
+            <body>
+                <h1>Error Loading Component Detail</h1>
+                <p>{error_msg}</p>
+                <pre>{traceback.format_exc()}</pre>
+            </body>
+        </html>
+        """)
+
+
+# Add this route directly in main.py, not in the router:
+@app.get("/api/components/{component_id}/outfits", response_class=HTMLResponse)
+async def component_outfits(request: Request, component_id: int, session: Session = Depends(get_session)):
+    """Simple endpoint for component outfits - for debugging"""
+    try:
+        print(f"DEBUG: Direct outfits endpoint called for component ID: {component_id}")
+        
+        # Just return a static message for now to verify the route works
+        return HTMLResponse("""
+        <div style="padding: 20px; background: #f0f0f0; border-radius: 8px; text-align: center;">
+            <h3>Outfits Debug View</h3>
+            <p>This is a simplified endpoint for debugging.</p>
+        </div>
+        """)
+    except Exception as e:
+        print(f"ERROR in direct component_outfits: {str(e)}")
+        traceback.print_exc()  # This will print the error in server logs
+        
+        # Return a simple error message
+        return HTMLResponse("""
+        <div style="padding: 20px; background: #ffeeee; border: 1px solid #ffaaaa; border-radius: 8px; text-align: center; color: #cc0000;">
+            <h3>Error Loading Outfits</h3>
+            <p>Check server logs for details.</p>
+        </div>
+        """)
+
+        
 # Health check
 @app.get("/health")
 async def health_check():
