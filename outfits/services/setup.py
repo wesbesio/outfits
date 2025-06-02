@@ -578,18 +578,18 @@ async def get_component_outfits(
     html = '<div class="outfit-cards">'
     for outfit in outfits:
         html += f'''
-        <div class="outfit-card-mini" 
-             hx-get="/outfits/{outfit.outid}" 
-             hx-target="#main-content" 
-             hx-push-url="true">
-            <div class="outfit-card-image">
-                {f'<img src="/api/images/outfit/{outfit.outid}?thumbnail=true" alt="{outfit.name}" loading="lazy">' if outfit.image else '<div class="card-image-placeholder mini">👗</div>'}
-            </div>
-            <div class="outfit-card-content">
-                <h4 class="outfit-card-title">{outfit.name}</h4>
-                <span class="outfit-card-cost">${outfit.totalcost}</span>
-            </div>
+    <div class="outfit-card-mini" 
+            hx-get="/outfits/{outfit.outid}" 
+            hx-target="#main-content" 
+            hx-push-url="true">
+        <div class="outfit-card-image">
+            {f'<img src="/api/images/outfit/{outfit.outid}?thumbnail=true" alt="{outfit.name}" loading="lazy">' if outfit.image else '<div class="card-image-placeholder mini">👗</div>'}
         </div>
+        <div class="outfit-card-content">
+            <h4 class="outfit-card-title">{outfit.name}</h4>
+            <span class="outfit-card-cost">${outfit.totalcost}</span>
+        </div>
+    </div>
         '''
     html += '</div>'
     
