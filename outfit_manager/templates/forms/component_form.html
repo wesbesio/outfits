@@ -1,1 +1,15 @@
 <!-- Component form full page -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{% if component %}Edit Component{% else %}New Component{% endif %}</h2>
+    <a href="/components/" class="btn btn-secondary" hx-get="/api/components/" hx-target="#main-content" hx-swap="outerHTML">
+        Back to List
+    </a>
+</div>
+
+<div id="component-form-container" class="card">
+    {% include "forms/component_form_content.html" %}
+</div>
+{% endblock %}

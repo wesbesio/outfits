@@ -1,25 +1,20 @@
 # File: models/database.py
-# Revision: 1.0 - Database configuration
+# Revision: 4.0 - Database configuration
 
-from sqlmodel import SQLModel, create_engine, Session
-from pathlib import Path
+from sqlmodel import create_engine, Session, SQLModel
+from . import Vendor, Piece, Component, Outfit, Out2Comp # Import models to ensure they are registered with SQLModel
 
-# Database file path
-DB_PATH = Path("outfit_manager.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+DATABASE_FILE = "outfit_manager.db"
+DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
 
-# Create engine with check_same_thread=False for SQLite
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    echo=True  # Set to False in production
-)
+engine = create_engine(DATABASE_URL, echo=True) # echo=True for SQL logging
 
-def init_db():
-    """Initialize database and create all tables."""
+def create_db_and_tables():
+    """Creates all SQLModel tables in the database."""
     SQLModel.metadata.create_all(engine)
+    print(f"Database and tables created at {DATABASE_FILE}")
 
 def get_session():
-    """Get database session."""
+    """Dependency to yield a database session."""
     with Session(engine) as session:
         yield session

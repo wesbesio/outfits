@@ -5,57 +5,43 @@ from sqlmodel import Session
 from models import Vendor, Piece
 from models.database import engine
 
-def create_initial_vendors():
-    """Create initial vendor data."""
+def seed_initial_data(session: Session):
+    """Seeds the database with initial Vendor and Piece data."""
     vendors = [
-        {"name": "Amazon", "description": "Online marketplace"},
-        {"name": "Poshmark", "description": "Social commerce marketplace"},
-        {"name": "Nordstrom", "description": "Upscale department store"},
-        {"name": "Target", "description": "Discount retail store"},
-        {"name": "Zara", "description": "Fast fashion retailer"},
-        {"name": "H&M", "description": "Swedish fashion retailer"},
-        {"name": "Uniqlo", "description": "Japanese casual wear designer"},
-        {"name": "Local Store", "description": "Physical retail store"}
+        Vendor(name="Amazon", description="Online retail giant"),
+        Vendor(name="Poshmark", description="Social marketplace for new and used style"),
+        Vendor(name="Zara", description="Fast fashion retailer"),
+        Vendor(name="Nike", description="Athletic apparel and footwear"),
     ]
-    
-    with Session(engine) as session:
-        for vendor_data in vendors:
-            vendor = Vendor(**vendor_data)
-            session.add(vendor)
-        session.commit()
 
-def create_initial_pieces():
-    """Create initial piece type data."""
     pieces = [
-        {"name": "Shirt", "description": "Tops, blouses, t-shirts"},
-        {"name": "Pants", "description": "Trousers, jeans, leggings"},
-        {"name": "Dress", "description": "One-piece garments"},
-        {"name": "Skirt", "description": "Lower body garments"},
-        {"name": "Jacket", "description": "Outerwear, blazers, coats"},
-        {"name": "Shoes", "description": "Footwear"},
-        {"name": "Accessories", "description": "Jewelry, bags, belts"},
-        {"name": "Undergarments", "description": "Underwear, bras, shapewear"},
-        {"name": "Swimwear", "description": "Bathing suits, bikinis"},
-        {"name": "Activewear", "description": "Athletic and workout clothing"}
+        Piece(name="Shirt", description="Upper body garment"),
+        Piece(name="Pants", description="Lower body garment"),
+        Piece(name="Shoes", description="Footwear"),
+        Piece(name="Jacket", description="Outerwear"),
+        Piece(name="Accessory", description="Additional item like a belt or jewelry"),
     ]
-    
-    with Session(engine) as session:
-        for piece_data in pieces:
-            piece = Piece(**piece_data)
-            session.add(piece)
-        session.commit()
 
-def seed_database():
-    """Seed database with initial data."""
-    print("🌱 Seeding database with initial data...")
-    
-    create_initial_vendors()
-    print("✅ Created initial vendors")
-    
-    create_initial_pieces()
-    print("✅ Created initial piece types")
-    
-    print("🎉 Database seeding complete!")
+    # Check if data already exists to prevent duplicates
+    if session.query(Vendor).first() is None:
+        session.add_all(vendors)
+        print("Seeding initial vendors...")
+    else:
+        print("Vendors already exist, skipping seeding.")
+
+    if session.query(Piece).first() is None:
+        session.add_all(pieces)
+        print("Seeding initial pieces...")
+    else:
+        print("Pieces already exist, skipping seeding.")
+
+    session.commit()
+    print("Initial data seeding complete.")
 
 if __name__ == "__main__":
-    seed_database()
+    # This block is for running the seed script directly for testing
+    from models.database import create_db_and_tables
+    print("Creating database and tables before seeding...")
+    create_db_and_tables()
+    with Session(engine) as session:
+        seed_initial_data(session)

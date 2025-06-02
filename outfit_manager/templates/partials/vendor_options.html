@@ -1,1 +1,6 @@
 <!-- Vendor options partial -->
+{% for vendor in vendors %}
+    <option value="{{ vendor.venid }}" {% if current_vendor_id and current_vendor_id == vendor.venid %}selected{% endif %}>
+        {{ vendor.name }}
+    </option>
+{% endfor %}

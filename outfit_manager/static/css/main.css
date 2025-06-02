@@ -1,5 +1,5 @@
 /* File: static/css/main.css */
-/* Revision: 1.0 - Complete design system */
+/* Revision: 4.1 - Added style for header title link */
 
 /* CSS Custom Properties */
 :root {
@@ -280,4 +280,373 @@ body {
 
 .htmx-request.htmx-indicator {
     opacity: 1;
+}
+/* File: static/css/main.css */
+/* Revision: 4.0 - Complete design system */
+
+:root {
+    --primary-color: #8B5CF6;      /* Main purple */
+    --primary-dark: #7C3AED;       /* Darker purple */
+    --primary-light: #A78BFA;      /* Lighter purple */
+    --secondary-color: #EC4899;    /* Pink accent */
+    --accent-color: #F3E8FF;       /* Light purple */
+    
+    --bg-gradient: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 50%, #F0F4FF 100%);
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --border-color: rgba(139, 92, 246, 0.3); /* primary-color with opacity */
+    --shadow-light: rgba(0, 0, 0, 0.05);
+    --shadow-medium: rgba(0, 0, 0, 0.1);
+    --glass-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-xxl: 48px;
+
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+
+    --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family-sans);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-gradient); /* Purple gradient background */
+    background-attachment: fixed;
+    line-height: 1.6;
+}
+
+a {
+    color: var(--primary-dark);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--secondary-color);
+}
+
+/* Header */
+.header {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px var(--shadow-medium);
+    z-index: 100;
+}
+
+.header h1 {
+    font-size: 1.8em;
+    margin: 0;
+}
+
+.header-nav {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.header-nav a {
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    transition: background-color 0.3s ease;
+    min-width: 44px; /* Touch-friendly */
+    min-height: 44px; /* Touch-friendly */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-nav a:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    padding: var(--spacing-lg);
+    max-width: 1200px;
+    width: 100%;
+    margin: var(--spacing-lg) auto;
+    background: var(--card-bg); /* Glassmorphism effect base */
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 30px var(--glass-shadow);
+    backdrop-filter: blur(10px) saturate(1.5); /* Glassmorphism effect */
+    -webkit-backdrop-filter: blur(10px) saturate(1.5);
+    border: 1px solid var(--border-color);
+    overflow: hidden; /* For inner padding */
+}
+
+/* Card-based layouts */
+.card-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile-first */
+    gap: var(--spacing-lg);
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.7); /* Slightly more transparent for glass effect */
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    box-shadow: 0 2px 10px var(--shadow-light);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px var(--shadow-medium);
+}
+
+.card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.card-title {
+    font-size: 1.2em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-dark);
+}
+
+.card-text {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    flex-grow: 1;
+}
+
+.card-actions {
+    margin-top: var(--spacing-md);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    min-width: 44px; /* Touch-friendly */
+    min-height: 44px; /* Touch-friendly */
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--primary-light);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #d13082; /* Slightly darker pink */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(236, 72, 153, 0.4);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.btn-danger {
+    background-color: #EF4444; /* Red for delete */
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #DC2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--accent-color);
+    outline: none;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+/* Bottom Navigation (Mobile-first) */
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: var(--primary-color);
+    padding: var(--spacing-sm) 0;
+    box-shadow: 0 -2px 10px var(--shadow-medium);
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.bottom-nav a {
+    color: white;
+    text-decoration: none;
+    flex: 1;
+    text-align: center;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    min-height: 44px; /* Touch-friendly */
+    min-width: 44px; /* Touch-friendly */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    transition: background-color 0.3s ease;
+}
+
+.bottom-nav a:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Hide header nav on small screens, show bottom nav */
+@media (max-width: 767px) {
+    .header-nav {
+        display: none;
+    }
+}
+
+/* Tablet and larger screens: Hide bottom nav, show header nav */
+@media (min-width: 768px) {
+    .bottom-nav {
+        display: none;
+    }
+    .header-nav {
+        display: flex;
+    }
+    .main-content {
+        padding: var(--spacing-xl); /* More padding on larger screens */
+    }
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Card-based layout */
+    }
+}
+
+/* Desktop screens */
+@media (min-width: 1024px) {
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}
+
+/* HTMX specific styles (optional, for indicators etc.) */
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+}
+
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}
+
+
+
+/* ... (previous CSS rules) ... */
+
+.header-title-link {
+    color: white; /* Ensure text color is white */
+    text-decoration: none; /* Remove underline */
+    /* Optional: Add hover effect if desired, e.g., text-shadow */
+}
+
+.header-title-link:hover {
+    text-decoration: none; /* Keep no underline on hover */
+    /* text-shadow: 0 0 5px rgba(255,255,255,0.5); /* Subtle glow on hover */
 }

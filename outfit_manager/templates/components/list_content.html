@@ -1,1 +1,10 @@
 <!-- Component list content only -->
+<div id="component-list-container" class="card-grid">
+    {% if components %}
+        {% for component in components %}
+            {% include "partials/component_cards.html" with context %}
+        {% endfor %}
+    {% else %}
+        <p class="text-center text-secondary">No components found. Try adding a new one!</p>
+    {% endif %}
+</div>

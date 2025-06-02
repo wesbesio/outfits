@@ -1,1 +1,39 @@
 <!-- Component list full page -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Components</h2>
+    <a href="/components/new" class="btn btn-primary" hx-get="/components/new" hx-target="#main-content" hx-swap="innerHTML">
+        Add New Component
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input">
+        <input type="search" name="q" id="search-input" placeholder="Search components..." class="form-control">
+        <select name="vendorid" hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="">All Vendors</option>
+            {% include "partials/vendor_options.html" %}
+        </select>
+        <select name="pieceid" hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="">All Pieces</option>
+            {% include "partials/piece_options.html" %}
+        </select>
+        <select name="sort_by" hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="cost">Sort by Cost</option>
+            <option value="brand">Sort by Brand</option>
+        </select>
+        <select name="sort_order" hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </form>
+</div>
+
+<div id="component-list-container" hx-get="/api/components/" hx-trigger="load" hx-swap="outerHTML">
+    {% include "components/list_content.html" %}
+</div>
+
+{% endblock %}

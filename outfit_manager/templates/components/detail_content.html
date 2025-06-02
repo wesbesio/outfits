@@ -1,1 +1,73 @@
 <!-- Component detail content only -->
+<div id="component-detail-or-form-container" class="card detail-card">
+    {% if component %}
+        <div class="detail-image-container mb-md">
+            {% if component.image %}
+                <img src="/api/images/components/{{ component.comid }}" alt="{{ component.name }}" class="card-image detail-image">
+            {% else %}
+                <img src="/static/images/placeholder.svg" alt="No image" class="card-image detail-image">
+            {% endif %}
+        </div>
+        <h3 class="card-title">{{ component.name }}</h3>
+        <p><strong>Brand:</strong> {{ component.brand if component.brand else 'N/A' }}</p>
+        <p><strong>Cost:</strong> ${{ component.cost }}</p>
+        <p><strong>Vendor:</strong> {{ component.vendor.name if component.vendor else 'N/A' }}</p>
+        <p><strong>Piece Type:</strong> {{ component.piece.name if component.piece else 'N/A' }}</p>
+        {% if component.description %}
+            <p><strong>Description:</strong> {{ component.description }}</p>
+        {% endif %}
+        {% if component.notes %}
+            <p><strong>Notes:</strong> {{ component.notes }}</p>
+        {% endif %}
+        <p><strong>Status:</strong> <span class="badge {{ 'active' if component.active else 'inactive' }}">{{ 'Active' if component.active else 'Inactive' }}</span></p>
+        {% if component.flag %}
+            <p><strong>Flagged:</strong> Yes</p>
+        {% endif %}
+
+        <hr class="my-lg">
+
+        <div class="related-outfits">
+            <h4>Outfits Using This Component</h4>
+            <div id="component-outfits-list" hx-get="/api/components/{{ component.comid }}/outfits" hx-trigger="load" hx-swap="innerHTML">
+                <p class="text-secondary text-center">Loading related outfits...</p>
+            </div>
+        </div>
+
+    {% else %}
+        <p class="text-center text-secondary">Component not found.</p>
+    {% endif %}
+</div>
+
+<style>
+    .detail-card {
+        padding: var(--spacing-xxl);
+        max-width: 800px;
+        margin: auto;
+    }
+    .detail-image-container {
+        width: 100%;
+        max-height: 400px; /* Limit height for detail image */
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--accent-color);
+        border-radius: var(--border-radius-md);
+    }
+    .detail-image {
+        width: 100%;
+        height: auto;
+        object-fit: contain; /* ensure full image is visible */
+        border-radius: var(--border-radius-sm);
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        border-radius: var(--border-radius-sm);
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+    }
+    .badge.active { background-color: #28a745; } /* Green */
+    .badge.inactive { background-color: #6c757d; } /* Gray */
+</style>
