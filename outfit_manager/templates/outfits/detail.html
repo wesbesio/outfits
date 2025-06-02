@@ -1,32 +1,44 @@
-<!-- Outfit detail full page -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="page-header">
     {% if edit_mode %}
-        <h2>{% if outfit %}Edit Outfit{% else %}New Outfit{% endif %}</h2>
+        <h2>{% if outfit and outfit.outid %}Edit Outfit{% else %}New Outfit{% endif %}</h2>
     {% else %}
         <h2>Outfit Details</h2>
     {% endif %}
     <div class="actions">
-        {% if not edit_mode and outfit %}
-            <a href="/outfits/{{ outfit.outid }}/edit" class="btn btn-outline" hx-get="/outfits/{{ outfit.outid }}/edit" hx-target="#main-content" hx-swap="innerHTML">
+        {% if not edit_mode and outfit and outfit.outid %}
+            <a href="/outfits/{{ outfit.outid }}/edit" class="btn btn-outline" hx-get="/outfits/{{ outfit.outid }}/edit" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
                 Edit
             </a>
-            <button class="btn btn-danger" hx-delete="/api/outfits/{{ outfit.outid }}" hx-confirm="Are you sure you want to delete this outfit? This action cannot be undone." hx-target="body" hx-swap="outerHTML" hx-push-url="/outfits/">
+            <button class="btn btn-danger" 
+                    hx-delete="/api/outfits/{{ outfit.outid }}" 
+                    hx-confirm="Are you sure you want to delete this outfit? This action cannot be undone." 
+                    hx-target="#main-content" {# Target main content to reload the list after delete #}
+                    hx-swap="innerHTML" 
+                    hx-push-url="/outfits/"> 
+                    {# HX-Redirect in the response will handle navigation to /outfits/ #}
                 Delete
             </button>
         {% endif %}
-        <a href="/outfits/" class="btn btn-secondary" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">
+        <a href="/outfits/" class="btn btn-secondary" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
             Back to List
         </a>
     </div>
 </div>
 
-<div id="outfit-detail-or-form-container">
+<div id="outfit-detail-or-form-container" class="{% if not edit_mode %}card detail-card{% else %}card{% endif %}">
+    {# This container's class changes based on whether it's a detail view or form view #}
+    {# The Python route will serve either detail_content.html or form_content.html directly into #main-content for HTMX requests #}
+    {# This structure is primarily for full page loads. #}
     {% if edit_mode %}
+        {# When edit_mode is true, the Python route (create_outfit_page or edit_outfit_page) #}
+        {# passes all necessary context for the form. #}
         {% include "forms/outfit_form_content.html" %}
     {% else %}
+        {# When edit_mode is false, the Python route (get_outfit_page) #}
+        {# passes all necessary context for the detail view. #}
         {% include "outfits/detail_content.html" %}
     {% endif %}
 </div>
