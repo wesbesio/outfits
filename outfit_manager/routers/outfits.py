@@ -1,18 +1,29 @@
 # File: routers/outfits.py
-# Revision: 1.3 - Added print for debugging HTMX path in create_outfit_page
+# Revision: 1.7 - Manual template render test for /outfits/new HTMX path
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from typing import Optional, List
+from jinja2 import TemplateNotFound # Import TemplateNotFound
 
 from models import Outfit, Component, Vendor, Out2Comp, Piece
 from models.database import get_session
 from services.image_service import ImageService
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+# Ensure the Jinja2Templates instance is correctly initialized
+# The directory should be relative to where main.py is, or an absolute path.
+# Assuming 'templates' is at the same level as 'main.py' or 'routers' directory.
+try:
+    templates = Jinja2Templates(directory="templates")
+except Exception as e:
+    print(f"Error initializing Jinja2Templates: {e}")
+    # Fallback or raise, depending on desired behavior if templates can't load
+    # For this test, we'll let it proceed and see if specific template loading fails.
+    pass
+
 
 async def get_outfit_form_context(request: Request, session: Session = Depends(get_session)):
     vendors = session.exec(select(Vendor).where(Vendor.active == True).order_by(Vendor.name)).all()
@@ -29,26 +40,65 @@ async def list_outfits_page(request: Request, session: Session = Depends(get_ses
 
 @router.get("/outfits/new", response_class=HTMLResponse)
 async def create_outfit_page(request: Request, context: dict = Depends(get_outfit_form_context)):
-    print(f"Accessing /outfits/new. HX-Request header: {request.headers.get('hx-request')}") # DEBUG PRINT
-    template_vars = {
-        "request": request, # Explicitly pass request
+    print(f"Accessing /outfits/new. HX-Request header: {request.headers.get('hx-request')}")
+
+    if request.headers.get("hx-request"):
+        print("Attempting to serve MANUALLY RENDERED HTML for HTMX request to /outfits/new")
+        
+        minimal_htmx_context = {
+            "request": request,
+            "outfit": None, 
+            "form_action": "/api/outfits/", 
+            "vendors": [], 
+            "error": None,
+            # The 'components' variable for the checkbox list is loaded by a separate hx-get.
+        }
+        
+        try:
+            # Manually get the template
+            template_to_render = templates.get_template("forms/outfit_form_content.html")
+            # Manually render it
+            rendered_html = template_to_render.render(minimal_htmx_context)
+            
+            if not rendered_html.strip():
+                print("ERROR: Manually rendered HTML for 'forms/outfit_form_content.html' is EMPTY or WHITESPACE.")
+                # Fallback to a very basic hardcoded HTML to ensure *something* is sent
+                rendered_html = """
+                <div style='border:2px solid orange; padding:10px;'>
+                    <p>Manual render resulted in empty string. Fallback HTML.</p>
+                    <p>Context was: {}</p>
+                </div>
+                """.format(minimal_htmx_context)
+                return HTMLResponse(content=rendered_html, status_code=200)
+
+            print(f"Manually rendered HTML (first 100 chars): {rendered_html[:100]}")
+            return HTMLResponse(content=rendered_html)
+            
+        except TemplateNotFound:
+            print("ERROR: Jinja2 TemplateNotFound for 'forms/outfit_form_content.html'")
+            return HTMLResponse(content="<p style='color:red;'>Error: Template 'forms/outfit_form_content.html' not found by Jinja2.</p>", status_code=500)
+        except Exception as e:
+            print(f"ERROR: Exception during manual template rendering for 'forms/outfit_form_content.html': {e}")
+            # It's crucial to see this error in the server logs.
+            return HTMLResponse(content=f"<p style='color:red;'>Server error during template rendering: {e}</p>", status_code=500)
+
+    # Full page load context
+    print("Serving outfits/detail.html for full page request")
+    full_page_template_vars = {
+        "request": request,
         "vendors": context.get("vendors"),
-        "components": context.get("all_active_components"), # For the component_checkboxes.html partial via API
+        "components": context.get("all_active_components"), 
         "outfit": None,
         "edit_mode": True,
         "form_action": "/api/outfits/",
         "current_component_ids": set(),
-        "error": None # Ensure error is initialized
+        "error": None
     }
-    
-    if request.headers.get("hx-request"):
-        print("Serving forms/outfit_form_content.html for HTMX request") # DEBUG PRINT
-        return templates.TemplateResponse("forms/outfit_form_content.html", template_vars)
-    
-    print("Serving outfits/detail.html for full page request") # DEBUG PRINT
-    return templates.TemplateResponse("outfits/detail.html", template_vars)
+    return templates.TemplateResponse("outfits/detail.html", full_page_template_vars)
 
 
+# ... (rest of the routes: /outfits/{outid}, /outfits/{outid}/edit, and all /api/outfits/* routes)
+# These should remain the same as Revision 1.5 for now.
 @router.get("/outfits/{outid}", response_class=HTMLResponse)
 async def get_outfit_page(outid: int, request: Request, session: Session = Depends(get_session)):
     outfit = session.get(Outfit, outid)
@@ -87,21 +137,21 @@ async def edit_outfit_page(outid: int, request: Request, context: dict = Depends
     }
     
     template_vars = {
-        "request": request, # Explicitly pass request
+        "request": request,
         "vendors": context.get("vendors"),
-        "components": context.get("all_active_components"),
+        "components": context.get("all_active_components"), 
         "outfit": outfit, 
         "edit_mode": True, 
         "form_action": f"/api/outfits/{outid}",
         "current_component_ids": current_component_ids,
-        "error": None # Ensure error is initialized
+        "error": None
     }
 
     if request.headers.get("hx-request"):
+        # Use the FULL version of the form content for edit, as it expects 'outfit' object
         return templates.TemplateResponse("forms/outfit_form_content.html", template_vars)
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
-# --- HTMX/API Endpoints ---
 
 @router.get("/api/outfits/", response_class=HTMLResponse)
 async def list_outfits_api(
@@ -151,13 +201,13 @@ async def create_outfit(
         if image_bytes: 
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
-                form_context = await get_outfit_form_context(request, session) # Use await
+                form_context = await get_outfit_form_context(request, session)
                 return templates.TemplateResponse(
-                    "forms/outfit_form_content.html",
+                    "forms/outfit_form_content.html", # FULL form
                     {**form_context, 
                      "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
                      "outfit": Outfit(name=name, description=description, notes=notes, vendorid=vendorid),
-                     "components": form_context.get("all_active_components"), # Use consistent naming
+                     "components": form_context.get("all_active_components"),
                      "current_component_ids": set(component_ids), "form_action": "/api/outfits/"},
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
@@ -215,13 +265,13 @@ async def update_outfit(
         if image_bytes:
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
-                form_context = await get_outfit_form_context(request, session) # Use await
+                form_context = await get_outfit_form_context(request, session)
                 return templates.TemplateResponse(
-                    "forms/outfit_form_content.html",
+                    "forms/outfit_form_content.html", # FULL form
                     {**form_context,
                      "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
                      "outfit": outfit_to_update,
-                     "components": form_context.get("all_active_components"), # Use consistent naming
+                     "components": form_context.get("all_active_components"),
                      "current_component_ids": set(component_ids), "form_action": f"/api/outfits/{outid}"},
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
@@ -296,9 +346,9 @@ async def get_available_components_for_outfit_form(
     current_component_ids = set()
     numeric_outid: Optional[int] = None
 
-    if outid is not None and outid.strip().isdigit(): # Ensure outid is not None before strip()
+    if outid is not None and outid.strip().isdigit():
         try:
-            numeric_outid = int(outid.strip()) # Strip before int conversion
+            numeric_outid = int(outid.strip())
         except ValueError:
             print(f"Warning: Could not convert outid='{outid}' to int.")
             numeric_outid = None
