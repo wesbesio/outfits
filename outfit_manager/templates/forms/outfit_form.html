@@ -1,1 +1,15 @@
 <!-- Outfit form full page -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{% if outfit %}Edit Outfit{% else %}New Outfit{% endif %}</h2>
+    <a href="/outfits/" class="btn btn-secondary" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">
+        Back to List
+    </a>
+</div>
+
+<div id="outfit-form-container" class="card">
+    {% include "forms/outfit_form_content.html" %}
+</div>
+{% endblock %}

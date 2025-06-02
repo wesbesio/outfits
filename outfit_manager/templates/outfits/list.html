@@ -1,1 +1,34 @@
 <!-- Outfit list full page -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Outfits</h2>
+    <a href="/outfits/new" class="btn btn-primary" hx-get="/outfits/new" hx-target="#main-content" hx-swap="innerHTML">
+        Add New Outfit
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input">
+        <input type="search" name="q" id="search-input" placeholder="Search outfits..." class="form-control">
+        <select name="vendorid" hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="">All Vendors</option>
+            {% include "partials/vendor_options.html" %}
+        </select>
+        <select name="sort_by" hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="totalcost">Sort by Cost</option>
+        </select>
+        <select name="sort_order" hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="change" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </form>
+</div>
+
+<div id="outfit-list-container" hx-get="/api/outfits/" hx-trigger="load" hx-swap="outerHTML">
+    {% include "outfits/list_content.html" %}
+</div>
+
+{% endblock %}

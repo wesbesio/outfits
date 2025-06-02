@@ -1,1 +1,76 @@
 <!-- Outfit form content only -->
+<div id="outfit-form-container">
+    <form hx-post="{{ form_action }}"
+          {% if outfit %} hx-put="{{ form_action }}" {% endif %}
+          hx-target="#outfit-form-container"
+          hx-swap="outerHTML"
+          enctype="multipart/form-data">
+
+        {% if error %}
+            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: 8px;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{ outfit.name if outfit else '' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="vendorid">Vendor (Optional):</label>
+            <select id="vendorid" name="vendorid">
+                <option value="">-- Select Vendor --</option>
+                {% for vendor in vendors %}
+                    <option value="{{ vendor.venid }}" {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
+                        {{ vendor.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description">{{ outfit.description if outfit else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (Optional):</label>
+            <textarea id="notes" name="notes">{{ outfit.notes if outfit else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
+            <input type="file" id="outfit-image-upload" name="image" accept="image/jpeg, image/png, image/webp, image/gif">
+            {% if outfit and outfit.image %}
+                <img id="outfit-image-preview" src="/api/images/outfits/{{ outfit.outid }}" alt="Current image" class="card-image mt-md" style="display: block; max-height: 200px; object-fit: contain;">
+                <label class="mt-sm">
+                    <input type="checkbox" name="keep_existing_image" value="True" checked> Keep existing image
+                </label>
+            {% else %}
+                <img id="outfit-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain;">
+                <input type="hidden" name="keep_existing_image" value="False">
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Select Components:</label>
+            <div id="component-checkboxes-container"
+                 hx-get="/api/outfits/components_list?outid={{ outfit.outid if outfit else '' }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <p class="text-secondary">Loading components...</p>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if outfit %}Update Outfit{% else %}Create Outfit{% endif %}
+            </button>
+            <a href="/outfits/" class="btn btn-outline" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+<script src="/static/js/image-preview.js"></script>

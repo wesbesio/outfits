@@ -1,1 +1,10 @@
 <!-- Outfit list content only -->
+<div id="outfit-list-container" class="card-grid">
+    {% if outfits %}
+        {% for outfit in outfits %}
+            {% include "partials/outfit_cards.html" with context %}
+        {% endfor %}
+    {% else %}
+        <p class="text-center text-secondary">No outfits found. Try adding a new one!</p>
+    {% endif %}
+</div>

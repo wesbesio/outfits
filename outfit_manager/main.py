@@ -1,8 +1,8 @@
 # File: main.py
-# Revision: 1.2 - Added RedirectResponse and status imports, updated root to redirect to components
+# Revision: 1.3 - Added Outfit Router
 
-from fastapi import FastAPI, Request, Depends, status # Added status
-from fastapi.responses import HTMLResponse, RedirectResponse # Added RedirectResponse
+from fastapi import FastAPI, Request, Depends, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
@@ -10,7 +10,7 @@ from sqlmodel import Session
 from models.database import create_db_and_tables, engine, get_session
 from services.seed_data import seed_initial_data
 # Import new routers
-from routers import components, images
+from routers import components, images, outfits # Added outfits
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -40,8 +40,6 @@ async def read_root(request: Request, session: Session = Depends(get_session)):
     Root endpoint serving the base HTML page.
     This will serve as the initial entry point for the HTMX application.
     """
-    # HTMX will then load content into the main-content block.
-    # We can directly redirect to the components list from the root
     response = RedirectResponse(url="/components/", status_code=status.HTTP_303_SEE_OTHER)
     response.headers["HX-Redirect"] = "/components/"
     return response
@@ -49,9 +47,9 @@ async def read_root(request: Request, session: Session = Depends(get_session)):
 # Include routers
 app.include_router(components.router)
 app.include_router(images.router)
-# Placeholder for other router includes (outfits, vendors, pieces)
-# from routers import outfits, vendors, pieces
-# app.include_router(outfits.router)
+app.include_router(outfits.router) # Added this line
+# Placeholder for other router includes (vendors, pieces)
+# from routers import vendors, pieces
 # app.include_router(vendors.router)
 # app.include_router(pieces.router)
 
