@@ -1,13 +1,15 @@
-<!-- Component form content only -->
 <div id="component-form-container">
-    <form hx-post="{{ form_action }}"
-          {% if component %} hx-put="{{ form_action }}" {% endif %}
-          hx-target="#component-form-container"
-          hx-swap="outerHTML"
+    <form {% if component %}
+              hx-put="{{ form_action }}"
+          {% else %}
+              hx-post="{{ form_action }}"
+          {% endif %}
+          hx-target="#main-content"  {# <<< CHANGED FROM #component-form-container #}
+          hx-swap="innerHTML"        {# Ensure main content is replaced entirely #}
           enctype="multipart/form-data">
 
         {% if error %}
-            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: 8px;">
+            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: var(--border-radius-sm);">
                 {{ error }}
             </div>
         {% endif %}
@@ -24,18 +26,19 @@
 
         <div class="form-group">
             <label for="cost">Cost ($):</label>
-            <input type="number" id="cost" name="cost" value="{{ component.cost if component else 0 }}" required min="0">
-        </div>
+            <input type="number" id="cost" name="cost" value="{{ component.cost if component else 0 }}" required min="0" step="0.01"> </div>
 
         <div class="form-group">
             <label for="vendorid">Vendor (Optional):</label>
             <select id="vendorid" name="vendorid">
                 <option value="">-- Select Vendor --</option>
-                {% for vendor in vendors %}
-                    <option value="{{ vendor.venid }}" {% if component and component.vendorid == vendor.venid %}selected{% endif %}>
-                        {{ vendor.name }}
-                    </option>
-                {% endfor %}
+                {% if vendors %} {# Ensure vendors is passed to this template #}
+                    {% for vendor in vendors %}
+                        <option value="{{ vendor.venid }}" {% if component and component.vendorid == vendor.venid %}selected{% endif %}>
+                            {{ vendor.name }}
+                        </option>
+                    {% endfor %}
+                {% endif %}
             </select>
         </div>
 
@@ -43,11 +46,13 @@
             <label for="pieceid">Piece Type (Optional):</label>
             <select id="pieceid" name="pieceid">
                 <option value="">-- Select Piece Type --</option>
-                {% for piece in pieces %}
-                    <option value="{{ piece.piecid }}" {% if component and component.pieceid == piece.piecid %}selected{% endif %}>
-                        {{ piece.name }}
-                    </option>
-                {% endfor %}
+                 {% if pieces %} {# Ensure pieces is passed to this template #}
+                    {% for piece in pieces %}
+                        <option value="{{ piece.piecid }}" {% if component and component.pieceid == piece.piecid %}selected{% endif %}>
+                            {{ piece.name }}
+                        </option>
+                    {% endfor %}
+                {% endif %}
             </select>
         </div>
 
@@ -62,27 +67,25 @@
         </div>
 
         <div class="form-group">
-            <label for="image">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
+            <label for="component-image-upload">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
             <input type="file" id="component-image-upload" name="image" accept="image/jpeg, image/png, image/webp, image/gif">
             {% if component and component.image %}
                 <img id="component-image-preview" src="/api/images/components/{{ component.comid }}" alt="Current image" class="card-image mt-md" style="display: block; max-height: 200px; object-fit: contain;">
-                <label class="mt-sm">
-                    <input type="checkbox" name="keep_existing_image" value="True" checked> Keep existing image
+                <label class="mt-sm" style="display: flex; align-items: center; gap: var(--spacing-xs);">
+                    <input type="checkbox" name="keep_existing_image" value="True" checked style="width: auto; height: auto; margin-right: var(--spacing-xs);"> Keep existing image
                 </label>
             {% else %}
                 <img id="component-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain;">
-                <input type="hidden" name="keep_existing_image" value="False">
-            {% endif %}
+                <input type="hidden" name="keep_existing_image" value="False"> {% endif %}
         </div>
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 {% if component %}Update Component{% else %}Create Component{% endif %}
             </button>
-            <a href="/components/" class="btn btn-outline" hx-get="/api/components/" hx-target="#main-content" hx-swap="outerHTML">
+            <a href="/components/" class="btn btn-outline" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
                 Cancel
             </a>
         </div>
     </form>
 </div>
-<script src="/static/js/image-preview.js"></script>

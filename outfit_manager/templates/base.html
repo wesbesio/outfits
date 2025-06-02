@@ -1,45 +1,47 @@
-<!-- File: templates/base.html -->
-<!-- Revision: 1.0 - Base template with HTMX integration -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Outfit Manager</title>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👕</text></svg>">
 </head>
 <body class="bg-gradient">
     <header class="header">
-        <a href="/components/" hx-get="/api/components/" hx-target="#main-content" hx-swap="outerHTML" class="header-title-link">
+        <a href="/components/" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true" class="header-title-link">
             <h1>Outfit Manager</h1>
         </a>
         <nav class="header-nav">
-            <a href="/" hx-get="/api/components/" hx-target="#main-content" hx-swap="outerHTML">Components</a>
-            <a href="/outfits" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">Outfits</a>
-            <a href="/vendors" hx-get="/api/vendors/" hx-target="#main-content" hx-swap="outerHTML">Vendors</a>
-            <a href="/pieces" hx-get="/api/pieces/" hx-target="#main-content" hx-swap="outerHTML">Pieces</a>
-        </nav>
+            <a href="/components/" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">Components</a>
+            <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">Outfits</a>
+            </nav>
     </header>
     
+    <div id="global-error-toast" class="error-toast" style="display: none;">
+        <p id="global-error-message"></p>
+        <button onclick="document.getElementById('global-error-toast').style.display='none'">&times;</button>
+    </div>
+
     <main id="main-content" class="main-content">
         {% block content %}{% endblock %}
     </main>
     
     <nav class="bottom-nav">
-        <a href="/" hx-get="/api/components/" hx-target="#main-content" hx-swap="outerHTML">
+        <a href="/components/" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
             <span>👕</span> Components
         </a>
-        <a href="/outfits" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">
+        <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
             <span>👔</span> Outfits
         </a>
-        <a href="/vendors" hx-get="/api/vendors/" hx-target="#main-content" hx-swap="outerHTML">
-            <span>🏢</span> Vendors
-        </a>
-        <a href="/pieces" hx-get="/api/pieces/" hx-target="#main-content" hx-swap="outerHTML">
-            <span>🏷️</span> Pieces
-        </a>
-    </nav>
+        <!-- 
+        <a href="/stats/" hx-get="/stats/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            <span>📊</span> Statistics
+        </a> Removed Stats Link
+        -->
+        </nav>
+    <script src="/static/js/form-error-handler.js" defer></script>
+    <script src="/static/js/image-preview.js" defer></script>
 </body>
 </html>

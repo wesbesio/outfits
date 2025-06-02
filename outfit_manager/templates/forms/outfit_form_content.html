@@ -1,13 +1,15 @@
-<!-- Outfit form content only -->
 <div id="outfit-form-container">
-    <form hx-post="{{ form_action }}"
-          {% if outfit %} hx-put="{{ form_action }}" {% endif %}
-          hx-target="#outfit-form-container"
-          hx-swap="outerHTML"
+    <form {% if outfit %}
+              hx-put="{{ form_action }}"
+          {% else %}
+              hx-post="{{ form_action }}"
+          {% endif %}
+          hx-target="#main-content"  {# Target main content for redirect/update after submission #}
+          hx-swap="innerHTML"
           enctype="multipart/form-data">
 
         {% if error %}
-            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: 8px;">
+            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: var(--border-radius-sm);">
                 {{ error }}
             </div>
         {% endif %}
@@ -21,11 +23,13 @@
             <label for="vendorid">Vendor (Optional):</label>
             <select id="vendorid" name="vendorid">
                 <option value="">-- Select Vendor --</option>
-                {% for vendor in vendors %}
-                    <option value="{{ vendor.venid }}" {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
-                        {{ vendor.name }}
-                    </option>
-                {% endfor %}
+                {% if vendors %}
+                    {% for vendor in vendors %}
+                        <option value="{{ vendor.venid }}" {% if outfit and outfit.vendorid == vendor.venid %}selected{% endif %}>
+                            {{ vendor.name }}
+                        </option>
+                    {% endfor %}
+                {% endif %}
             </select>
         </div>
 
@@ -40,12 +44,12 @@
         </div>
 
         <div class="form-group">
-            <label for="image">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
+            <label for="outfit-image-upload">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
             <input type="file" id="outfit-image-upload" name="image" accept="image/jpeg, image/png, image/webp, image/gif">
             {% if outfit and outfit.image %}
                 <img id="outfit-image-preview" src="/api/images/outfits/{{ outfit.outid }}" alt="Current image" class="card-image mt-md" style="display: block; max-height: 200px; object-fit: contain;">
-                <label class="mt-sm">
-                    <input type="checkbox" name="keep_existing_image" value="True" checked> Keep existing image
+                <label class="mt-sm" style="display: flex; align-items: center; gap: var(--spacing-xs);">
+                    <input type="checkbox" name="keep_existing_image" value="True" checked style="width: auto; height: auto; margin-right: var(--spacing-xs);"> Keep existing image
                 </label>
             {% else %}
                 <img id="outfit-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain;">
@@ -55,8 +59,9 @@
 
         <div class="form-group">
             <label>Select Components:</label>
+            {% set outid_val = outfit.outid if outfit and outfit.outid else "" %}
             <div id="component-checkboxes-container"
-                 hx-get="/api/outfits/components_list?outid={{ outfit.outid if outfit else '' }}"
+                 hx-get="/api/outfits/components_list?outid={{ outid_val }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
                 <p class="text-secondary">Loading components...</p>
@@ -67,10 +72,9 @@
             <button type="submit" class="btn btn-primary">
                 {% if outfit %}Update Outfit{% else %}Create Outfit{% endif %}
             </button>
-            <a href="/outfits/" class="btn btn-outline" hx-get="/api/outfits/" hx-target="#main-content" hx-swap="outerHTML">
+            <a href="/outfits/" class="btn btn-outline" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
                 Cancel
             </a>
         </div>
     </form>
 </div>
-<script src="/static/js/image-preview.js"></script>

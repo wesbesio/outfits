@@ -1,5 +1,5 @@
 # File: main.py
-# Revision: 1.3 - Added Outfit Router
+# Revision: 1.5 - Removed Stats Router
 
 from fastapi import FastAPI, Request, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,8 +9,8 @@ from sqlmodel import Session
 
 from models.database import create_db_and_tables, engine, get_session
 from services.seed_data import seed_initial_data
-# Import new routers
-from routers import components, images, outfits # Added outfits
+# Import routers
+from routers import components, images, outfits # Removed stats import
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -19,7 +19,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Mount static files (ensure `static/images/placeholder.svg` exists if you use it)
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configure Jinja2 templates
@@ -38,20 +38,21 @@ def on_startup():
 async def read_root(request: Request, session: Session = Depends(get_session)):
     """
     Root endpoint serving the base HTML page.
-    This will serve as the initial entry point for the HTMX application.
+    Redirects to the components list by default.
     """
     response = RedirectResponse(url="/components/", status_code=status.HTTP_303_SEE_OTHER)
-    response.headers["HX-Redirect"] = "/components/"
     return response
 
 # Include routers
-app.include_router(components.router)
-app.include_router(images.router)
-app.include_router(outfits.router) # Added this line
+app.include_router(components.router, tags=["Components"])
+app.include_router(images.router, tags=["Images"])
+app.include_router(outfits.router, tags=["Outfits"])
+# app.include_router(stats.router, prefix="/stats", tags=["Statistics"]) # Removed stats router
+
 # Placeholder for other router includes (vendors, pieces)
-# from routers import vendors, pieces
-# app.include_router(vendors.router)
-# app.include_router(pieces.router)
+# from routers import vendors, pieces 
+# app.include_router(vendors.router, prefix="/vendors", tags=["Vendors"])
+# app.include_router(pieces.router, prefix="/pieces", tags=["Pieces"])
 
 if __name__ == "__main__":
     import uvicorn
