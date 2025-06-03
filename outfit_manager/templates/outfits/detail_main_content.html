@@ -12,9 +12,9 @@
             <button class="btn btn-danger"
                     hx-delete="/api/outfits/{{ outfit.outid }}"
                     hx-confirm="Are you sure you want to delete this outfit? This action cannot be undone."
-                    hx-target="#main-content"
-                    hx-swap="innerHTML"
-                    hx-push-url="/outfits/">
+                    hx-target="#main-content" 
+                    hx-swap="innerHTML">
+                    {# HX-Push-Url will be set by the server response from the DELETE endpoint #}
                 Delete
             </button>
         {% endif %}
@@ -27,10 +27,10 @@
 <div id="outfit-detail-or-form-container" class="{% if not edit_mode and outfit %}card detail-card{% else %}card{% endif %}">
     {# This div will contain either the form or the detail content #}
     {% if edit_mode %}
-        {# For the form: requires outfit, vendors, components (all_active_components), current_component_ids, form_action, error #}
+        {# For the form: requires request, outfit, vendors, components (all_active_components), current_component_ids, form_action, error #}
         {% include "forms/outfit_form_content.html" %}
     {% else %}
-        {# For detail view: requires outfit, associated_components #}
+        {# For detail view: requires request, outfit, associated_components #}
         {% include "outfits/detail_content.html" %}
     {% endif %}
 </div>

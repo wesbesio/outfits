@@ -62,7 +62,7 @@
         <div class="form-group">
             <label>Select Components for this Outfit:</label>
             <div id="component-checkboxes-container"
-                 {% if outfit and outfit.outid %} {# HTMX attributes are now conditional #}
+                 {% if outfit and outfit.outid %} 
                      hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
                      hx-trigger="load"
                      hx-swap="innerHTML"
