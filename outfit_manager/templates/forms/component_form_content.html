@@ -1,260 +1,96 @@
 <!-- File: templates/forms/component_form_content.html -->
-<!-- Revision: 4.1 - Fixed form submission URL and added error handling -->
+<!-- Revision: 1.1 - Fixed cost input to display in dollars -->
 
-{% block content %}
-<div class="container">
-    <!-- Breadcrumb Navigation -->
-    <div class="breadcrumb-nav">
-        <a href="/components" class="breadcrumb-link" 
-           hx-get="/components" hx-target="#main-content" hx-push-url="true">
-            ← Back to Components
-        </a>
-    </div>
+<div id="component-form-container">
+    <form {% if component %}
+              hx-put="{{ form_action }}"
+          {% else %}
+              hx-post="{{ form_action }}"
+          {% endif %}
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          enctype="multipart/form-data">
 
-    <!-- Form Page -->
-    <div class="form-page">
-        <div class="form-page-header">
-            <h1 class="form-page-title">{{ page_title }}</h1>
-            <p class="form-page-subtitle">
-                {% if is_edit %}
-                    Update your component details and settings
-                {% else %}
-                    Add a new component to your wardrobe
-                {% endif %}
-            </p>
+        {% if error %}
+            <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: var(--border-radius-sm);">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{ component.name if component else '' }}" required>
         </div>
-        
-        <div class="form">
-            <form id="component-form"
-                  hx-{% if is_edit %}put{% else %}post{% endif %}="/api/components/{% if is_edit %}{{ component.comid }}{% endif %}"
-                  hx-encoding="multipart/form-data"
-                  hx-target="#main-content"
-                  hx-swap="outerHTML"
-                  hx-indicator="#form-indicator">
-                
-                <!-- Image Upload Section -->
-                <div class="form-group">
-                    <label class="form-label">Component Photo</label>
-                    <div class="upload-container">
-                        <input type="file" id="component-image-input" name="file" 
-                               accept="image/jpeg,image/png,image/webp" 
-                               onchange="previewImage(this, 'component-preview')">
-                        
-                        <label for="component-image-input" class="upload-button btn btn-primary">
-                            <span>📁</span> Select Image
-                        </label>
-                        
-                        <div id="component-preview" class="preview-area"></div>
-                        
-                        <p class="upload-help">JPEG, PNG, WebP up to 5MB</p>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="component-name" class="form-label">Component Name *</label>
-                        <input type="text" 
-                               id="component-name" 
-                               name="name" 
-                               class="form-input" 
-                               value="{% if component %}{{ component.name }}{% endif %}" 
-                               required
-                               placeholder="e.g. Blue Denim Jacket, Black Sneakers">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="component-brand" class="form-label">Brand</label>
-                        <input type="text" 
-                               id="component-brand" 
-                               name="brand" 
-                               class="form-input" 
-                               value="{% if component %}{{ component.brand or '' }}{% endif %}" 
-                               placeholder="e.g. Nike, Zara, H&M">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="component-cost" class="form-label">Cost *</label>
-                        <div class="input-group">
-                            <span class="input-prefix">$</span>
-                            <input type="number" 
-                                   id="component-cost" 
-                                   name="cost" 
-                                   class="form-input" 
-                                   value="{% if component %}{{ component.cost }}{% else %}0{% endif %}" 
-                                   min="0" 
-                                   step="1" 
-                                   required
-                                   placeholder="0">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="component-piece" class="form-label">Piece Type</label>
-                        <select id="component-piece" name="piecid" class="form-select">
-                            <option value="">Select piece type...</option>
-                            {% for piece in pieces %}
-                            <option value="{{ piece.piecid }}" 
-                                    {% if component and component.piecid == piece.piecid %}selected{% endif %}>
-                                {{ piece.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="component-vendor" class="form-label">Vendor</label>
-                    <select id="component-vendor" name="vendorid" class="form-select">
-                        <option value="">Select vendor...</option>
-                        {% for vendor in vendors %}
-                        <option value="{{ vendor.venid }}" 
-                                {% if component and component.vendorid == vendor.venid %}selected{% endif %}>
+
+        <div class="form-group">
+            <label for="brand">Brand (Optional):</label>
+            <input type="text" id="brand" name="brand" value="{{ component.brand if component else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="cost">Cost ($):</label>
+            <input type="number" id="cost" name="cost" value="{{ (component.cost / 100)|round(2) if component else 0 }}" required min="0" step="0.01">
+        </div>
+
+        <div class="form-group">
+            <label for="vendorid">Vendor (Optional):</label>
+            <select id="vendorid" name="vendorid">
+                <option value="">-- Select Vendor --</option>
+                {% if vendors %}
+                    {% for vendor in vendors %}
+                        <option value="{{ vendor.venid }}" {% if component and component.vendorid == vendor.venid %}selected{% endif %}>
                             {{ vendor.name }}
                         </option>
-                        {% endfor %}
-                    </select>
-                    <small class="form-help">Where did you purchase this component?</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="component-description" class="form-label">Description</label>
-                    <textarea id="component-description" 
-                              name="description" 
-                              class="form-textarea" 
-                              placeholder="Describe this component - color, material, style, fit...">{% if component %}{{ component.description or '' }}{% endif %}</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <div class="radio-group">
-                        <label class="radio-option {% if not component or component.active %}selected{% endif %}">
-                            <input type="radio" name="active" value="true" 
-                                   {% if not component or component.active %}checked{% endif %}>
-                            <span>Active</span>
-                            <small>Available for outfits</small>
-                        </label>
-                        <label class="radio-option {% if component and not component.active %}selected{% endif %}">
-                            <input type="radio" name="active" value="false" 
-                                   {% if component and not component.active %}checked{% endif %}>
-                            <span>Retired</span>
-                            <small>No longer in use</small>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="component-notes" class="form-label">Notes</label>
-                    <textarea id="component-notes" 
-                              name="notes" 
-                              class="form-textarea" 
-                              placeholder="Care instructions, styling tips, or other notes...">{% if component %}{{ component.notes or '' }}{% endif %}</textarea>
-                </div>
-                
-                <!-- Flag (hidden) -->
-                <input type="hidden" name="flag" value="false">
-                
-                <!-- Hidden loading indicator -->
-                <div id="form-indicator" class="htmx-indicator loading-state">
-                    <div class="spinner"></div>
-                    <p>Saving component...</p>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" 
-                            class="btn btn-secondary"
-                            hx-get="/components"
-                            hx-target="#main-content"
-                            hx-push-url="true">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        {% if is_edit %}
-                            <span>💾</span> Update Component
-                        {% else %}
-                            <span>✨</span> Create Component
-                        {% endif %}
-                    </button>
-                </div>
-            </form>
+                    {% endfor %}
+                {% endif %}
+            </select>
         </div>
-    </div>
+
+        <div class="form-group">
+            <label for="pieceid">Piece Type (Optional):</label>
+            <select id="pieceid" name="pieceid">
+                <option value="">-- Select Piece Type --</option>
+                 {% if pieces %}
+                    {% for piece in pieces %}
+                        <option value="{{ piece.piecid }}" {% if component and component.pieceid == piece.piecid %}selected{% endif %}>
+                            {{ piece.name }}
+                        </option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description">{{ component.description if component else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (Optional):</label>
+            <textarea id="notes" name="notes">{{ component.notes if component else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="component-image-upload">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
+            <input type="file" id="component-image-upload" name="image" accept="image/jpeg, image/png, image/webp, image/gif">
+            {% if component and component.image %}
+                <img id="component-image-preview" src="/api/images/components/{{ component.comid }}" alt="Current image" class="card-image mt-md" style="display: block; max-height: 200px; object-fit: contain;">
+                <label class="mt-sm" style="display: flex; align-items: center; gap: var(--spacing-xs);">
+                    <input type="checkbox" name="keep_existing_image" value="True" checked style="width: auto; height: auto; margin-right: var(--spacing-xs);"> Keep existing image
+                </label>
+            {% else %}
+                <img id="component-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain;">
+                <input type="hidden" name="keep_existing_image" value="False">
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if component %}Update Component{% else %}Create Component{% endif %}
+            </button>
+            <a href="/components/" class="btn btn-outline" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                Cancel
+            </a>
+        </div>
+    </form>
 </div>
-
-<style>
-/* Upload styles */
-.upload-container {
-    border: 2px dashed #D1D5DB;
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    text-align: center;
-    background: #F9FAFB;
-    margin-bottom: var(--spacing-md);
-}
-
-.upload-container input[type="file"] {
-    display: none;
-}
-
-.upload-button {
-    display: inline-block;
-    cursor: pointer;
-    margin: var(--spacing-md) 0;
-}
-
-.preview-area {
-    margin-top: var(--spacing-md);
-    max-height: 200px;
-    overflow: hidden;
-    display: none;
-}
-
-.preview-area img {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: var(--radius-md);
-    object-fit: contain;
-}
-
-.upload-help {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    margin-top: var(--spacing-sm);
-}
-</style>
-
-<script>
-// Minimal JavaScript for image preview
-function previewImage(input, previewId) {
-    const preview = document.getElementById(previewId);
-    
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            preview.style.display = 'block';
-        };
-        
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-// Radio button styling
-document.addEventListener('change', function(e) {
-    if (e.target.type === 'radio') {
-        const name = e.target.name;
-        const radioOptions = document.querySelectorAll(`input[name="${name}"]`);
-        radioOptions.forEach(option => {
-            const label = option.closest('.radio-option');
-            if (option.checked) {
-                label.classList.add('selected');
-            } else {
-                label.classList.remove('selected');
-            }
-        });
-    }
-});
-</script>
-{% endblock %}

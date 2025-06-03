@@ -1,17 +1,20 @@
-from sqlmodel import SQLModel, create_engine, Session
-from typing import Generator
-import os
+# File: models/database.py
+# Revision: 4.0 - Database configuration
 
-# Database URL - use SQLite for simplicity
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./outfit_manager.db")
+from sqlmodel import create_engine, Session, SQLModel
+from . import Vendor, Piece, Component, Outfit, Out2Comp # Import models to ensure they are registered with SQLModel
 
-engine = create_engine(DATABASE_URL, echo=True)
+DATABASE_FILE = "outfit_manager.db"
+DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
+
+engine = create_engine(DATABASE_URL, echo=True) # echo=True for SQL logging
 
 def create_db_and_tables():
-    """Create database and tables"""
+    """Creates all SQLModel tables in the database."""
     SQLModel.metadata.create_all(engine)
+    print(f"Database and tables created at {DATABASE_FILE}")
 
-def get_session() -> Generator[Session, None, None]:
-    """Database session dependency"""
+def get_session():
+    """Dependency to yield a database session."""
     with Session(engine) as session:
         yield session

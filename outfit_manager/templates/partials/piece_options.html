@@ -1,4 +1,6 @@
-<option value="">Select piece type...</option>
+<!-- Piece options partial -->
 {% for piece in pieces %}
-<option value="{{ piece.piecid }}">{{ piece.name }}</option>
+    <option value="{{ piece.piecid }}" {% if current_piece_id and current_piece_id == piece.piecid %}selected{% endif %}>
+        {{ piece.name }}
+    </option>
 {% endfor %}

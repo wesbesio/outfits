@@ -1,0 +1,46 @@
+<div class="page-header">
+    <h2>Components</h2>
+    <a href="/components/new" 
+       class="btn btn-primary" 
+       hx-get="/components/new" 
+       hx-target="#main-content" 
+       hx-swap="innerHTML">
+       {# Removed hx-push-url="true" #}
+        Add New Component
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/components/" hx-target="#component-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input, change from:select">
+        <input type="search" name="q" id="search-input" placeholder="Search components..." class="form-control">
+        <select name="vendorid" class="form-control">
+            <option value="">All Vendors</option>
+            {% if vendors %}
+                {% for vendor in vendors %}
+                    <option value="{{ vendor.venid }}">{{ vendor.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <select name="pieceid" class="form-control">
+            <option value="">All Pieces</option>
+            {% if pieces %}
+                {% for piece in pieces %}
+                    <option value="{{ piece.piecid }}">{{ piece.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <select name="sort_by" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="cost">Sort by Cost</option>
+            <option value="brand">Sort by Brand</option>
+        </select>
+        <select name="sort_order" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </form>
+</div>
+
+<div id="component-list-container" hx-get="/api/components/" hx-trigger="load" hx-swap="outerHTML">
+    <p class="text-center text-secondary">Loading components...</p>
+</div>

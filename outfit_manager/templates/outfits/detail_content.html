@@ -1,0 +1,62 @@
+<!-- File: templates/outfits/detail_content.html -->
+<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+
+<div id="outfit-detail-or-form-container" class="card detail-card">
+    {% if outfit %}
+        <div class="detail-image-container mb-md">
+            {% if outfit.image %}
+                <img src="/api/images/outfits/{{ outfit.outid }}" alt="{{ outfit.name }}" class="card-image detail-image">
+            {% else %}
+                <img src="/static/images/placeholder.svg" alt="No image" class="card-image detail-image">
+            {% endif %}
+        </div>
+        <h3 class="card-title">{{ outfit.name }}</h3>
+        <p><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
+        <p><strong>Vendor:</strong> {{ outfit.vendor.name if outfit.vendor else 'N/A' }}</p>
+        {% if outfit.description %}
+            <p><strong>Description:</strong> {{ outfit.description }}</p>
+        {% endif %}
+        {% if outfit.notes %}
+            <p><strong>Notes:</strong> {{ outfit.notes }}</p>
+        {% endif %}
+        <p><strong>Status:</strong> <span class="badge {{ 'active' if outfit.active else 'inactive' }}">{{ 'Active' if outfit.active else 'Inactive' }}</span></p>
+        {% if outfit.flag %}
+            <p><strong>Flagged:</strong> Yes</p>
+        {% endif %}
+
+        <hr class="my-lg">
+
+        <div class="associated-components">
+            <h4>Components in this Outfit</h4>
+            <div id="outfit-components-list" class="card-grid compact-grid">
+                {% if associated_components %}
+                    {% for component in associated_components %}
+                        {% include "partials/component_cards.html" with context %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-secondary">No components in this outfit.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    {% else %}
+        <p class="text-center text-secondary">Outfit not found.</p>
+    {% endif %}
+</div>
+
+<style>
+    /* Add styles for compact component grid if needed */
+    .compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Smaller cards for associated items */
+        gap: var(--spacing-md);
+    }
+    .compact-grid .card {
+        padding: var(--spacing-md);
+    }
+    .compact-grid .card-image {
+        height: 120px; /* Smaller images */
+    }
+    .compact-grid .card-title {
+        font-size: 1em;
+    }
+</style>

@@ -1,0 +1,39 @@
+<!--Outfit_manager/templates/outfits/list_main_content.html-->
+<!--v1.2-->
+<div class="page-header">
+    <h2>Outfits</h2>
+    <a href="/outfits/new" 
+       class="btn btn-primary" 
+       hx-get="/outfits/new" 
+       hx-target="#main-content" 
+       hx-swap="innerHTML"> 
+       {# Ensure hx-push-url="true" is NOT present here #}
+        Add New Outfit
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input, change from:select">
+        <input type="search" name="q" id="search-input" placeholder="Search outfits..." class="form-control">
+        <select name="vendorid" class="form-control">
+            <option value="">All Vendors</option>
+            {% if vendors %} {# Expects 'vendors' from context #}
+                {% for vendor_item in vendors %}
+                    <option value="{{ vendor_item.venid }}">{{ vendor_item.name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <select name="sort_by" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="totalcost">Sort by Cost</option>
+        </select>
+        <select name="sort_order" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </form>
+</div>
+
+<div id="outfit-list-container" hx-get="/api/outfits/" hx-trigger="load" hx-swap="outerHTML">
+    <p class="text-center text-secondary">Loading outfits...</p>
+</div>

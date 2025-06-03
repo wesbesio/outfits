@@ -1,70 +1,15 @@
-<div class="card-grid">
-    {% for component in components %}
-    <div class="card component-card" 
-         hx-get="/components/{{ component.comid }}" 
-         hx-target="#main-content" 
-         hx-push-url="true"
-         data-component-id="{{ component.comid }}">
-        
-        <div class="card-image">
-            {% if component.has_image %}
-                <img src="/api/images/component/{{ component.comid }}?thumbnail=true" 
-                     alt="{{ component.name }}" 
-                     loading="lazy">
-            {% else %}
-                <div class="card-image-placeholder">
-                    🧥
-                </div>
-            {% endif %}
-            
-            {% if component.piece_name %}
-            <div class="card-badge-overlay">
-                <span class="type-badge">{{ component.piece_name }}</span>
-            </div>
-            {% endif %}
-        </div>
-        
-        <div class="card-content">
-            <h3 class="card-title">{{ component.name }}</h3>
-            
-            <div class="component-details">
-                {% if component.brand %}
-                <div class="detail-row">
-                    <span class="detail-label">Brand</span>
-                    <span class="detail-value">{{ component.brand }}</span>
-                </div>
-                {% endif %}
-                {% if component.vendor_name %}
-                <div class="detail-row">
-                    <span class="detail-label">Vendor</span>
-                    <span class="detail-value">{{ component.vendor_name }}</span>
-                </div>
-                {% endif %}
-            </div>
-            
-            <div class="card-meta">
-                <span class="card-price">${{ component.cost }}</span>
-                <span class="card-badge {{ 'badge-active' if component.active else 'badge-inactive' }}">
-                    {{ 'Active' if component.active else 'Retired' }}
-                </span>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-    
-    {% if not components %}
-    <div class="empty-state">
-        <div class="empty-content">
-            <span class="empty-icon">🧥</span>
-            <h3>No components found</h3>
-            <p>Add your first component to get started!</p>
-            <button class="btn btn-primary" 
-                    hx-get="/forms/new-component" 
-                    hx-target="#modal-container .modal-content"
-                    onclick="showModal()">
-                Add Component
-            </button>
-        </div>
-    </div>
+<!-- File: templates/partials/component_cards.html -->
+<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+
+<div class="card" hx-get="/components/{{ component.comid }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    {% if component.image %}
+        <img src="/api/images/components/{{ component.comid }}" alt="{{ component.name }}" class="card-image">
+    {% else %}
+        <img src="/static/images/placeholder.svg" alt="No image" class="card-image">
     {% endif %}
+    <h3 class="card-title">{{ component.name }}</h3>
+    <p class="card-text"><strong>Brand:</strong> {{ component.brand if component.brand else 'N/A' }}</p>
+    <p class="card-text"><strong>Cost:</strong> ${{ component.cost|cents_to_dollars }}</p>
+    <p class="card-text"><strong>Piece:</strong> {{ component.piece.name if component.piece else 'N/A' }}</p>
+    <p class="card-text"><strong>Vendor:</strong> {{ component.vendor.name if component.vendor else 'N/A' }}</p>
 </div>
