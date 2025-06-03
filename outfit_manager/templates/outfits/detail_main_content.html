@@ -1,3 +1,6 @@
+<!-- File: templates/outfits/detail_main_content.html -->
+<!-- Revision: 1.3 - Complete working version without auto-loading triggers -->
+
 <div class="page-header">
     {% if edit_mode %}
         <h2>{% if outfit and outfit.outid %}Edit Outfit: {{ outfit.name }}{% else %}New Outfit{% endif %}</h2>
@@ -14,7 +17,6 @@
                     hx-confirm="Are you sure you want to delete this outfit? This action cannot be undone."
                     hx-target="#main-content" 
                     hx-swap="innerHTML">
-                    {# HX-Push-Url will be set by the server response from the DELETE endpoint #}
                 Delete
             </button>
         {% endif %}
@@ -25,12 +27,89 @@
 </div>
 
 <div id="outfit-detail-or-form-container" class="{% if not edit_mode and outfit %}card detail-card{% else %}card{% endif %}">
-    {# This div will contain either the form or the detail content #}
     {% if edit_mode %}
-        {# For the form: requires request, outfit, vendors, components (all_active_components), current_component_ids, form_action, error #}
-        {% include "forms/outfit_form_content.html" %}
+        <!-- OUTFIT FORM -->
+        <div id="outfit-form-container">
+            <form {% if outfit and outfit.outid %}
+                      hx-put="{{ form_action }}"
+                  {% else %}
+                      hx-post="{{ form_action }}"
+                  {% endif %}
+                  hx-target="#main-content"
+                  hx-swap="innerHTML"
+                  enctype="multipart/form-data">
+
+                {% if error %}
+                    <div class="alert alert-danger mb-md" style="color: #EF4444; background-color: #FEF2F2; border: 1px solid #FCA5A5; padding: 10px; border-radius: var(--border-radius-sm);">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="name">Outfit Name:</label>
+                    <input type="text" id="name" name="name" value="{{ outfit.name if outfit else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (Optional):</label>
+                    <textarea id="description" name="description" rows="3">{{ outfit.description if outfit else '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes (Optional):</label>
+                    <textarea id="notes" name="notes" rows="3">{{ outfit.notes if outfit else '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="outfit-image-upload">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
+                    <input type="file" id="outfit-image-upload" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="form-control">
+                    {% if outfit and outfit.image %}
+                        <img id="outfit-image-preview" src="/api/images/outfits/{{ outfit.outid }}" alt="Current image" class="card-image mt-md" style="display: block; max-height: 200px; object-fit: contain; border-radius: var(--border-radius-sm);">
+                        <label class="mt-sm" style="display: flex; align-items: center; gap: var(--spacing-xs); font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="keep_existing_image" value="True" checked style="width: auto; height: auto; margin-right: var(--spacing-xs);"> Keep existing image
+                        </label>
+                    {% else %}
+                        <img id="outfit-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain; border-radius: var(--border-radius-sm);">
+                        <input type="hidden" name="keep_existing_image" value="False">
+                    {% endif %}
+                </div>
+
+                {% if outfit and outfit.outid %}
+                    <!-- EXISTING OUTFIT: Load component checkboxes via HTMX -->
+                    <div class="form-group">
+                        <label>Select Components for this Outfit:</label>
+                        <div id="component-checkboxes-container">
+                            <button type="button" 
+                                    class="btn btn-outline"
+                                    hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
+                                    hx-target="#component-checkboxes-container"
+                                    hx-swap="innerHTML">
+                                Load Components
+                            </button>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- NEW OUTFIT: Show helpful message -->
+                    <div class="form-group">
+                        <label>Components:</label>
+                        <div class="info-box" style="padding: var(--spacing-md); background-color: var(--accent-color); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
+                            <p class="text-secondary text-center">💡 Save the outfit first, then you can add components by editing it.</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if outfit and outfit.outid %}Update Outfit{% else %}Create Outfit{% endif %}
+                    </button>
+                    <a href="/outfits/" class="btn btn-outline" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
     {% else %}
-        {# For detail view: requires request, outfit, associated_components #}
+        <!-- OUTFIT DETAIL VIEW -->
         {% include "outfits/detail_content.html" %}
     {% endif %}
 </div>
