@@ -1,4 +1,6 @@
-<!-- Outfit cards partial -->
+<!-- File: templates/partials/outfit_cards.html -->
+<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+
 <div class="card" hx-get="/outfits/{{ outfit.outid }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
     {% if outfit.image %}
         <img src="/api/images/outfits/{{ outfit.outid }}" alt="{{ outfit.name }}" class="card-image">
@@ -6,6 +8,6 @@
         <img src="/static/images/placeholder.svg" alt="No image" class="card-image">
     {% endif %}
     <h3 class="card-title">{{ outfit.name }}</h3>
-    <p class="card-text"><strong>Total Cost:</strong> ${{ outfit.totalcost }}</p>
+    <p class="card-text"><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
     <p class="card-text"><strong>Vendor:</strong> {{ outfit.vendor.name if outfit.vendor else 'N/A' }}</p>
 </div>
