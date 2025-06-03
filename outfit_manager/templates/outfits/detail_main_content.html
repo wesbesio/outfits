@@ -1,31 +1,45 @@
-<!-- File: templates/outfits/list_main_content.html -->
-<!-- Revision: 1.3 - Removed vendor filter from outfit list -->
+<!-- File: templates/outfits/detail_main_content.html -->
+<!-- Revision: 1.2 - MINIMAL TEST VERSION to isolate the triggering issue -->
 
 <div class="page-header">
-    <h2>Outfits</h2>
-    <a href="/outfits/new" 
-       class="btn btn-primary" 
-       hx-get="/outfits/new" 
-       hx-target="#main-content" 
-       hx-swap="innerHTML">
-        Add New Outfit
-    </a>
+    <h2>🧪 TEST: {% if edit_mode %}{% if outfit %}Edit Outfit{% else %}New Outfit{% endif %}{% else %}Outfit Details{% endif %}</h2>
+    <div class="actions">
+        <a href="/outfits/" class="btn btn-secondary">Back to List</a>
+    </div>
 </div>
 
-<div class="filter-sort-bar mb-lg">
-    <form hx-get="/api/outfits/" hx-target="#outfit-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input, change from:select">
-        <input type="search" name="q" id="search-input" placeholder="Search outfits..." class="form-control">
-        <select name="sort_by" class="form-control">
-            <option value="name">Sort by Name</option>
-            <option value="totalcost">Sort by Cost</option>
-        </select>
-        <select name="sort_order" class="form-control">
-            <option value="asc">Ascending</option>
-            <option value="desc">Descending</option>
-        </select>
-    </form>
+<div class="card" style="padding: 2rem;">
+    {% if edit_mode %}
+        <h3>✅ FORM LOADING TEST</h3>
+        <p>If you can see this, the template is loading correctly!</p>
+        <p><strong>Edit Mode:</strong> {{ edit_mode }}</p>
+        <p><strong>Outfit:</strong> {{ outfit.name if outfit else 'None (New Outfit)' }}</p>
+        <p><strong>Components Count:</strong> {{ components|length if components else 0 }}</p>
+        
+        <!-- SIMPLE FORM WITHOUT HTMX TRIGGERS -->
+        <form action="{{ form_action }}" method="post" enctype="multipart/form-data">
+            <div style="margin-bottom: 1rem;">
+                <label for="name">Outfit Name:</label>
+                <input type="text" id="name" name="name" value="{{ outfit.name if outfit else '' }}" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem; height: 100px;">{{ outfit.description if outfit else '' }}</textarea>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <button type="submit" style="background: #8B5CF6; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.375rem; cursor: pointer;">
+                    {% if outfit and outfit.outid %}Update Outfit{% else %}Create Outfit{% endif %}
+                </button>
+                <a href="/outfits/" style="margin-left: 1rem; padding: 0.75rem 1.5rem; text-decoration: none; background: #6B7280; color: white; border-radius: 0.375rem;">Cancel</a>
+            </div>
+        </form>
+        
+    {% else %}
+        <h3>📄 DETAIL VIEW</h3>
+        <p>Outfit details would go here...</p>
+    {% endif %}
 </div>
 
-<div id="outfit-list-container" hx-get="/api/outfits/" hx-trigger="load" hx-swap="outerHTML">
-    <p class="text-center text-secondary">Loading outfits...</p>
-</div>
+<!-- NO HTMX TRIGGERS OR INCLUDES TO TEST -->
