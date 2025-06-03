@@ -1,5 +1,5 @@
 <!-- File: templates/partials/outfit_cards.html -->
-<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+<!-- Revision: 1.2 - Removed vendor display from outfit cards -->
 
 <div class="card" hx-get="/outfits/{{ outfit.outid }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
     {% if outfit.image %}
@@ -9,5 +9,4 @@
     {% endif %}
     <h3 class="card-title">{{ outfit.name }}</h3>
     <p class="card-text"><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
-    <p class="card-text"><strong>Vendor:</strong> {{ outfit.vendor.name if outfit.vendor else 'N/A' }}</p>
 </div>

@@ -1,5 +1,5 @@
 # File: routers/outfits.py
-# Revision: 1.15 - Fixed cost display consistency (cents to dollars conversion)
+# Revision: 1.18 - FIXED: Route order to prevent /outfits/new being caught by /outfits/
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status, Query
 from fastapi.responses import HTMLResponse
@@ -19,27 +19,21 @@ def cents_to_dollars(cents: int) -> float:
     return cents / 100.0
 
 async def get_outfit_form_context(request: Request, session: Session = Depends(get_session)):
-    """Provides common context (vendors, all active components) for outfit forms and detail pages."""
-    vendors = session.exec(select(Vendor).where(Vendor.active == True).order_by(Vendor.name)).all()
+    """Provides common context for outfit forms and detail pages."""
     all_active_components = session.exec(select(Component).where(Component.active == True).order_by(Component.name)).all()
-    return {"request": request, "vendors": vendors, "all_active_components": all_active_components}
+    return {"request": request, "all_active_components": all_active_components}
 
-@router.get("/outfits/", response_class=HTMLResponse)
-async def list_outfits_page(request: Request, session: Session = Depends(get_session)):
-    """Serves the full HTML page for listing outfits or just the main content block for HTMX requests."""
-    vendors = session.exec(select(Vendor).where(Vendor.active == True).order_by(Vendor.name)).all()
-    context = {"request": request, "vendors": vendors}
-    if request.headers.get("hx-request"):
-        return templates.TemplateResponse("outfits/list_main_content.html", context)
-    return templates.TemplateResponse("outfits/list.html", context)
+# IMPORTANT: More specific routes MUST come before less specific ones
+# /outfits/new MUST come before /outfits/
 
 @router.get("/outfits/new", response_class=HTMLResponse)
 async def create_outfit_page(request: Request, context: dict = Depends(get_outfit_form_context)):
     """Serves the HTML page for creating a new outfit, adapting for HTMX requests."""
+    print(f"🎯 CREATE OUTFIT PAGE CALLED - HX-Request: {request.headers.get('hx-request')}")  # Debug log
+    
     template_vars = {
         "request": request,
-        "vendors": context.get("vendors"),
-        "components": context.get("all_active_components"),
+        "components": context.get("all_active_components", []),
         "outfit": None,
         "edit_mode": True,
         "form_action": "/api/outfits/",
@@ -49,9 +43,38 @@ async def create_outfit_page(request: Request, context: dict = Depends(get_outfi
     }
 
     if request.headers.get("hx-request"):
+        print("🎯 Returning HTMX template: outfits/detail_main_content.html")  # Debug log
         return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
+    
+    print("🎯 Returning full page template: outfits/detail.html")  # Debug log
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
+@router.get("/outfits/{outid}/edit", response_class=HTMLResponse)
+async def edit_outfit_page(outid: int, request: Request, context: dict = Depends(get_outfit_form_context), session: Session = Depends(get_session)):
+    """Serves the HTML page for editing an existing outfit, adapting for HTMX requests."""
+    outfit = session.get(Outfit, outid)
+    if not outfit or not outfit.active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
+
+    current_component_ids = {
+        link.comid for link in session.exec(
+            select(Out2Comp).where(Out2Comp.outid == outid, Out2Comp.active == True)
+        ).all()
+    }
+    template_vars = {
+        "request": request,
+        "components": context.get("all_active_components", []),
+        "outfit": outfit,
+        "edit_mode": True,
+        "form_action": f"/api/outfits/{outid}",
+        "current_component_ids": current_component_ids,
+        "error": None,
+        "associated_components": []
+    }
+
+    if request.headers.get("hx-request"):
+        return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
+    return templates.TemplateResponse("outfits/detail.html", template_vars)
 
 @router.get("/outfits/{outid}", response_class=HTMLResponse)
 async def get_outfit_page(outid: int, request: Request, session: Session = Depends(get_session)):
@@ -78,33 +101,15 @@ async def get_outfit_page(outid: int, request: Request, session: Session = Depen
         return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
-@router.get("/outfits/{outid}/edit", response_class=HTMLResponse)
-async def edit_outfit_page(outid: int, request: Request, context: dict = Depends(get_outfit_form_context), session: Session = Depends(get_session)):
-    """Serves the HTML page for editing an existing outfit, adapting for HTMX requests."""
-    outfit = session.get(Outfit, outid)
-    if not outfit or not outfit.active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
-
-    current_component_ids = {
-        link.comid for link in session.exec(
-            select(Out2Comp).where(Out2Comp.outid == outid, Out2Comp.active == True)
-        ).all()
-    }
-    template_vars = {
-        "request": request,
-        "vendors": context.get("vendors"),
-        "components": context.get("all_active_components"),
-        "outfit": outfit,
-        "edit_mode": True,
-        "form_action": f"/api/outfits/{outid}",
-        "current_component_ids": current_component_ids,
-        "error": None,
-        "associated_components": []
-    }
-
+@router.get("/outfits/", response_class=HTMLResponse)
+async def list_outfits_page(request: Request, session: Session = Depends(get_session)):
+    """Serves the full HTML page for listing outfits or just the main content block for HTMX requests."""
+    print(f"🎯 LIST OUTFITS PAGE CALLED - HX-Request: {request.headers.get('hx-request')}")  # Debug log
+    
+    context = {"request": request}
     if request.headers.get("hx-request"):
-        return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
-    return templates.TemplateResponse("outfits/detail.html", template_vars)
+        return templates.TemplateResponse("outfits/list_main_content.html", context)
+    return templates.TemplateResponse("outfits/list.html", context)
 
 # --- API Endpoints ---
 @router.get("/api/outfits/", response_class=HTMLResponse)
@@ -112,15 +117,12 @@ async def list_outfits_api(
     request: Request,
     session: Session = Depends(get_session),
     q: Optional[str] = None,
-    vendorid: Optional[int] = None,
     sort_by: Optional[str] = "name",
     sort_order: Optional[str] = "asc"
 ):
     query = select(Outfit).where(Outfit.active == True)
     if q:
         query = query.where(Outfit.name.ilike(f"%{q}%") | Outfit.description.ilike(f"%{q}%"))
-    if vendorid:
-        query = query.where(Outfit.vendorid == vendorid)
 
     sort_field = getattr(Outfit, sort_by, Outfit.name)
     if sort_order == "desc":
@@ -143,13 +145,16 @@ async def create_outfit(
     request: Request,
     session: Session = Depends(get_session),
     name: str = Form(...),
-    description: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    vendorid: Optional[int] = Form(None),
+    description: str = Form(""),
+    notes: str = Form(""),
     image: Optional[UploadFile] = File(None)
 ):
     processed_image_bytes = None
     form_render_context = await get_outfit_form_context(request, session)
+
+    # Convert form data
+    description = description.strip() or None
+    notes = notes.strip() or None
 
     if image and image.filename:
         image_bytes = await image.read()
@@ -157,9 +162,10 @@ async def create_outfit(
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
                 error_context = {
-                    **form_render_context,
+                    "request": request,
+                    "components": form_render_context.get("all_active_components", []),
                     "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
-                    "outfit": Outfit(name=name, description=description, notes=notes, vendorid=vendorid),
+                    "outfit": Outfit(name=name, description=description, notes=notes),
                     "edit_mode": True,
                     "form_action": "/api/outfits/",
                     "current_component_ids": set(),
@@ -169,7 +175,7 @@ async def create_outfit(
 
     new_outfit = Outfit(
         name=name, description=description, notes=notes,
-        vendorid=vendorid, image=processed_image_bytes, totalcost=0
+        image=processed_image_bytes, totalcost=0
     )
     session.add(new_outfit)
     session.commit()
@@ -177,8 +183,7 @@ async def create_outfit(
 
     success_render_context = {
         "request": request,
-        "vendors": form_render_context.get("vendors"),
-        "components": form_render_context.get("all_active_components"),
+        "components": form_render_context.get("all_active_components", []),
         "outfit": new_outfit,
         "edit_mode": True,
         "form_action": f"/api/outfits/{new_outfit.outid}",
@@ -197,21 +202,24 @@ async def update_outfit(
     request: Request,
     session: Session = Depends(get_session),
     name: str = Form(...),
-    description: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    vendorid: Optional[int] = Form(None),
+    description: str = Form(""),
+    notes: str = Form(""),
     image: Optional[UploadFile] = File(None),
-    keep_existing_image: Optional[bool] = Form(False),
+    keep_existing_image: Optional[str] = Form(None),
     component_ids: List[int] = Form([])
 ):
     outfit_to_update = session.get(Outfit, outid)
     if not outfit_to_update or not outfit_to_update.active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
 
+    # Convert form data
+    description = description.strip() or None
+    notes = notes.strip() or None
+    keep_image = keep_existing_image is not None and keep_existing_image.lower() in ("true", "on", "1", "yes")
+
     outfit_to_update.name = name
     outfit_to_update.description = description
     outfit_to_update.notes = notes
-    outfit_to_update.vendorid = vendorid
     
     form_render_context = await get_outfit_form_context(request, session)
 
@@ -221,17 +229,18 @@ async def update_outfit(
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
                 error_context = {
-                    **form_render_context,
-                     "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
-                     "outfit": outfit_to_update,
-                     "edit_mode": True,
-                     "form_action": f"/api/outfits/{outid}",
-                     "current_component_ids": set(component_ids),
-                     "associated_components": []
+                    "request": request,
+                    "components": form_render_context.get("all_active_components", []),
+                    "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
+                    "outfit": outfit_to_update,
+                    "edit_mode": True,
+                    "form_action": f"/api/outfits/{outid}",
+                    "current_component_ids": set(component_ids),
+                    "associated_components": []
                 }
                 return templates.TemplateResponse("outfits/detail_main_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
             outfit_to_update.image = processed_image_bytes
-    elif not keep_existing_image:
+    elif not keep_image:
         outfit_to_update.image = None
 
     # Manage component associations
@@ -295,8 +304,7 @@ async def delete_outfit(request: Request, outid: int, session: Session = Depends
             link.active = False; session.add(link)
     session.commit()
     
-    vendors_for_list = session.exec(select(Vendor).where(Vendor.active == True).order_by(Vendor.name)).all()
-    list_context = {"request": request, "vendors": vendors_for_list}
+    list_context = {"request": request}
     
     response = templates.TemplateResponse("outfits/list_main_content.html", list_context)
     response.headers["HX-Push-Url"] = "/outfits/" 

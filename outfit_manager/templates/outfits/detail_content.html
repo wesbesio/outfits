@@ -1,5 +1,5 @@
 <!-- File: templates/outfits/detail_content.html -->
-<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+<!-- Revision: 1.2 - Removed vendor display from outfit details -->
 
 <div id="outfit-detail-or-form-container" class="card detail-card">
     {% if outfit %}
@@ -12,7 +12,6 @@
         </div>
         <h3 class="card-title">{{ outfit.name }}</h3>
         <p><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
-        <p><strong>Vendor:</strong> {{ outfit.vendor.name if outfit.vendor else 'N/A' }}</p>
         {% if outfit.description %}
             <p><strong>Description:</strong> {{ outfit.description }}</p>
         {% endif %}
