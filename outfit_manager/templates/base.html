@@ -53,6 +53,43 @@
     </script>
     <script src="/static/js/form-error-handler.js" defer></script>
     <script src="/static/js/image-preview.js" defer></script>
+    <script>
+        // HTMX Request Configuration Logger
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            console.log("HTMX Config Request:", evt.detail.path, evt.detail);
+            console.log("Triggering Element:", evt.detail.elt);
+            if (evt.detail.triggeringEvent) {
+                console.log("Triggering Event Type:", evt.detail.triggeringEvent.type);
+            }
+        });
+    
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            console.log("HTMX Before Swap for target:", evt.detail.target.id, "URL:", evt.detail.xhr.responseURL);
+            // Be cautious logging evt.detail.xhr.responseText here if it's very long,
+            // but for debugging, you might log a snippet or its length.
+            // console.log("Swap content snippet:", evt.detail.xhr.responseText.substring(0, 200));
+        });
+    
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            console.log("HTMX After Swap for target:", evt.detail.target.id, "URL:", evt.detail.xhr.responseURL);
+        });
+    
+        document.body.addEventListener('htmx:oobBeforeSwap', function(evt) {
+            console.log("HTMX OOB Before Swap for target:", evt.detail.target.id);
+        });
+    
+         document.body.addEventListener('htmx:oobAfterSwap', function(evt) {
+            console.log("HTMX OOB After Swap for target:", evt.detail.target.id);
+        });
+    
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            console.error("HTMX Response Error:", evt.detail.xhr.status, evt.detail.xhr.responseURL, evt.detail.error);
+        });
+    
+        document.body.addEventListener('htmx:sendError', function(evt) {
+            console.error("HTMX Send Error:", evt.detail.error, evt.detail.requestConfig.path);
+        });
+    </script>
 </body>
 </html>
 

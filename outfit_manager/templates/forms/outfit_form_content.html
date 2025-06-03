@@ -1,11 +1,11 @@
-<div id="outfit-form-container"> {# This ID is useful if the form itself needs to be targeted for error re-rendering, though current setup targets #main-content for success #}
+<div id="outfit-form-container">
     <form {% if outfit and outfit.outid %}
               hx-put="{{ form_action }}"
           {% else %}
               hx-post="{{ form_action }}"
           {% endif %}
-          hx-target="#main-content"  {# Target main content for redirect/update after successful submission #}
-          hx-swap="innerHTML"        {# Replace the entire main content area #}
+          hx-target="#main-content"
+          hx-swap="innerHTML"
           enctype="multipart/form-data">
 
         {% if error %}
@@ -23,8 +23,8 @@
             <label for="vendorid">Vendor (Optional):</label>
             <select id="vendorid" name="vendorid">
                 <option value="">-- Select Vendor --</option>
-                {% if vendors %} {# Context: vendors (list of Vendor objects) #}
-                    {% for vendor_item in vendors %} {# Renamed to avoid conflict with outer 'vendor' if any #}
+                {% if vendors %}
+                    {% for vendor_item in vendors %}
                         <option value="{{ vendor_item.venid }}" {% if outfit and outfit.vendorid == vendor_item.venid %}selected{% endif %}>
                             {{ vendor_item.name }}
                         </option>
@@ -55,19 +55,23 @@
                 </label>
             {% else %}
                 <img id="outfit-image-preview" src="#" alt="Image preview" class="card-image mt-md" style="display: none; max-height: 200px; object-fit: contain; border-radius: var(--border-radius-sm);">
-                <input type="hidden" name="keep_existing_image" value="False"> {# Ensures this field is always submitted #}
+                <input type="hidden" name="keep_existing_image" value="False">
             {% endif %}
         </div>
 
         <div class="form-group">
             <label>Select Components for this Outfit:</label>
-            {# Context: 'components' (list of all active Component objects for checkboxes), 'current_component_ids' (set of IDs) #}
-            {% set current_outfit_id = outfit.outid if outfit and outfit.outid else "" %}
             <div id="component-checkboxes-container"
-                 hx-get="/api/outfits/components_list?outid={{ current_outfit_id }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <p class="text-secondary text-center">Loading components...</p>
+                 {% if outfit and outfit.outid %} {# HTMX attributes are now conditional #}
+                     hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML"
+                 {% endif %}>
+                {% if outfit and outfit.outid %}
+                    <p class="text-secondary text-center">Loading components...</p>
+                {% else %}
+                    <p class="text-secondary text-center">Save the outfit to enable adding components.</p>
+                {% endif %}
             </div>
         </div>
 

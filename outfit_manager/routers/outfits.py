@@ -1,9 +1,9 @@
-# File: routers/outfits.py
-# Revision: 1.10 - Restore TemplateResponse for /outfits/new HTMX path, ensure correct context
+# File: outfit_manager/routers/outfits.py
+# Revision: 1.12 - Return detail_main_content.html for HTMX requests to ensure full content swap.
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates 
+from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from typing import Optional, List
 
@@ -33,39 +33,23 @@ async def list_outfits_page(request: Request, session: Session = Depends(get_ses
 @router.get("/outfits/new", response_class=HTMLResponse)
 async def create_outfit_page(request: Request, context: dict = Depends(get_outfit_form_context)):
     """Serves the HTML page for creating a new outfit, adapting for HTMX requests."""
-    print(f"Accessing /outfits/new. HX-Request header: {request.headers.get('hx-request')}")
-
-    # Base context for both full page and HTMX fragment
-    # This context is for 'forms/outfit_form_content.html'
-    # and also for 'outfits/detail.html' when it includes the form.
     template_vars = {
         "request": request,
         "vendors": context.get("vendors"),
-        # 'components' is used by forms/outfit_form_content.html to pass to partials/component_checkboxes.html
-        # when it's loaded via hx-get. However, for the initial render of the form itself,
-        # the main things needed are 'vendors', 'outfit' (None), 'form_action', etc.
-        # The `get_outfit_form_context` provides `all_active_components`.
-        # The `forms/outfit_form_content.html` (full version) expects `vendors`.
-        # The `component_checkboxes.html` (loaded by hx-get) expects `components` and `current_component_ids`.
-        "components": context.get("all_active_components"), # Make all_active_components available as 'components'
-        "outfit": None, 
-        "edit_mode": True, 
+        "components": context.get("all_active_components"), # For forms/outfit_form_content.html
+        "outfit": None,
+        "edit_mode": True,
         "form_action": "/api/outfits/",
-        "current_component_ids": set(), # No components pre-selected for a new outfit
-        "error": None 
+        "current_component_ids": set(), # For forms/outfit_form_content.html
+        "error": None,
+        # associated_components is not needed when edit_mode is True
     }
-    
+
     if request.headers.get("hx-request"):
-        print("Serving forms/outfit_form_content.html for HTMX request using TemplateResponse")
-        # For the HTMX fragment, we directly render forms/outfit_form_content.html
-        # It needs 'request', 'vendors', 'outfit' (None), 'form_action', 'current_component_ids' (empty), 'error' (None).
-        # The 'components' key (all_active_components) is also passed in case the template uses it,
-        # though the actual checkboxes are populated by an API call.
-        return templates.TemplateResponse("forms/outfit_form_content.html", template_vars)
-    
-    # Full page load: outfits/detail.html acts as the host for the form
-    print("Serving outfits/detail.html for full page request")
-    # `template_vars` is already suitable for `outfits/detail.html` which will include the form.
+        # Return the main content block which includes the page header and the form
+        return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
+
+    # Full page load uses outfits/detail.html which will render the same content block
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
 
@@ -82,17 +66,21 @@ async def get_outfit_page(outid: int, request: Request, session: Session = Depen
         .where(Out2Comp.outid == outid, Out2Comp.active == True, Component.active == True)
     ).all()
     associated_components = sorted([link.Component for link in outfit_component_links if link.Component], key=lambda c: c.name)
-    
+
     outfit.totalcost = sum(comp.cost for comp in associated_components if comp)
 
     template_vars = {
-        "request": request, 
-        "outfit": outfit, 
-        "edit_mode": False, 
-        "associated_components": associated_components
+        "request": request,
+        "outfit": outfit,
+        "edit_mode": False,
+        "associated_components": associated_components # For outfits/detail_content.html
+        # For detail_main_content context when edit_mode=False:
+        # It will include outfits/detail_content.html which uses 'outfit' and 'associated_components'.
+        # 'vendors', 'components', 'current_component_ids', 'form_action', 'error' are not used by it.
     }
     if request.headers.get("hx-request"):
-        return templates.TemplateResponse("outfits/detail_content.html", template_vars)
+        # Return the main content block which includes the page header and the detail view
+        return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
 @router.get("/outfits/{outid}/edit", response_class=HTMLResponse)
@@ -107,23 +95,25 @@ async def edit_outfit_page(outid: int, request: Request, context: dict = Depends
             select(Out2Comp).where(Out2Comp.outid == outid, Out2Comp.active == True)
         ).all()
     }
-    
+
     template_vars = {
         "request": request,
         "vendors": context.get("vendors"),
-        "components": context.get("all_active_components"), 
-        "outfit": outfit, 
-        "edit_mode": True, 
+        "components": context.get("all_active_components"), # For forms/outfit_form_content.html
+        "outfit": outfit,
+        "edit_mode": True,
         "form_action": f"/api/outfits/{outid}",
-        "current_component_ids": current_component_ids,
+        "current_component_ids": current_component_ids, # For forms/outfit_form_content.html
         "error": None
+        # associated_components is not needed when edit_mode is True
     }
 
     if request.headers.get("hx-request"):
-        return templates.TemplateResponse("forms/outfit_form_content.html", template_vars)
+        # Return the main content block which includes the page header and the form
+        return templates.TemplateResponse("outfits/detail_main_content.html", template_vars)
     return templates.TemplateResponse("outfits/detail.html", template_vars)
 
-# --- API Endpoints ---
+# --- API Endpoints (create_outfit, update_outfit, etc. remain the same as previous version) ---
 @router.get("/api/outfits/", response_class=HTMLResponse)
 async def list_outfits_api(
     request: Request,
@@ -163,47 +153,38 @@ async def create_outfit(
     description: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     vendorid: Optional[int] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    component_ids: List[int] = Form([]) 
+    image: Optional[UploadFile] = File(None)
 ):
     processed_image_bytes = None
     if image and image.filename:
         image_bytes = await image.read()
-        if image_bytes: 
+        if image_bytes:
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
-                form_context = await get_outfit_form_context(request, session)
+                form_context_for_error = await get_outfit_form_context(request, session)
                 error_context = {
-                    **form_context, 
+                    **form_context_for_error,
                     "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
                     "outfit": Outfit(name=name, description=description, notes=notes, vendorid=vendorid),
-                    "components": form_context.get("all_active_components"),
-                    "current_component_ids": set(component_ids), 
-                    "form_action": "/api/outfits/"
+                    "current_component_ids": set(),
+                    "form_action": "/api/outfits/",
+                    "edit_mode": True
                 }
-                return templates.TemplateResponse("forms/outfit_form_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
+                return templates.TemplateResponse("outfits/detail_main_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
 
     new_outfit = Outfit(
         name=name, description=description, notes=notes,
         vendorid=vendorid, image=processed_image_bytes, totalcost=0
     )
-    session.add(new_outfit); session.commit(); session.refresh(new_outfit)
+    session.add(new_outfit)
+    session.commit()
+    session.refresh(new_outfit)
 
-    current_total_cost = 0
-    if component_ids:
-        for comid_val in component_ids:
-            component_item = session.get(Component, comid_val)
-            if component_item and component_item.active:
-                out2comp_link = Out2Comp(outid=new_outfit.outid, comid=comid_val, active=True)
-                session.add(out2comp_link); current_total_cost += component_item.cost
-    
-    new_outfit.totalcost = current_total_cost
-    session.add(new_outfit); session.commit(); session.refresh(new_outfit)
-
-    response = RedirectResponse(url=f"/outfits/{new_outfit.outid}", status_code=status.HTTP_303_SEE_OTHER)
-    response.headers["HX-Redirect"] = f"/outfits/{new_outfit.outid}"
+    response = RedirectResponse(url=f"/outfits/{new_outfit.outid}/edit", status_code=status.HTTP_303_SEE_OTHER)
+    response.headers["HX-Redirect"] = f"/outfits/{new_outfit.outid}/edit"
+    response.headers["HX-Push-Url"] = f"/outfits/{new_outfit.outid}/edit" # <-- ADD THIS LINE
     return response
-
+    
 @router.put("/api/outfits/{outid}", response_class=HTMLResponse)
 async def update_outfit(
     outid: int,
@@ -218,29 +199,32 @@ async def update_outfit(
     component_ids: List[int] = Form([])
 ):
     outfit_to_update = session.get(Outfit, outid)
-    if not outfit_to_update or not outfit_to_update.active: 
+    if not outfit_to_update or not outfit_to_update.active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
 
-    outfit_to_update.name = name; outfit_to_update.description = description; 
-    outfit_to_update.notes = notes; outfit_to_update.vendorid = vendorid
+    outfit_to_update.name = name
+    outfit_to_update.description = description
+    outfit_to_update.notes = notes
+    outfit_to_update.vendorid = vendorid
 
     if image and image.filename:
         image_bytes = await image.read()
         if image_bytes:
             processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
             if processed_image_bytes is None:
-                form_context = await get_outfit_form_context(request, session)
+                form_context_for_error = await get_outfit_form_context(request, session)
+                # Similar to create_outfit error, re-render the main content block for the form
                 error_context = {
-                    **form_context,
+                    **form_context_for_error,
                      "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
                      "outfit": outfit_to_update,
-                     "components": form_context.get("all_active_components"),
-                     "current_component_ids": set(component_ids), 
-                     "form_action": f"/api/outfits/{outid}"
+                     "current_component_ids": set(component_ids),
+                     "form_action": f"/api/outfits/{outid}",
+                     "edit_mode": True
                 }
-                return templates.TemplateResponse("forms/outfit_form_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
+                return templates.TemplateResponse("outfits/detail_main_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
             outfit_to_update.image = processed_image_bytes
-    elif not keep_existing_image: 
+    elif not keep_existing_image:
         outfit_to_update.image = None
 
     existing_links = session.exec(select(Out2Comp).where(Out2Comp.outid == outid)).all()
@@ -249,15 +233,21 @@ async def update_outfit(
 
     for comid_val, link_obj in existing_comids_in_db.items():
         if comid_val not in selected_comids_from_form:
-            if link_obj.active: link_obj.active = False; session.add(link_obj)
-        else: 
-            if not link_obj.active: link_obj.active = True; session.add(link_obj)
+            if link_obj.active:
+                link_obj.active = False
+                session.add(link_obj)
+        else:
+            if not link_obj.active:
+                link_obj.active = True
+                session.add(link_obj)
+
     for comid_val in selected_comids_from_form:
         if comid_val not in existing_comids_in_db:
             component_item = session.get(Component, comid_val)
-            if component_item and component_item.active: 
-                session.add(Out2Comp(outid=outid, comid=comid_val, active=True))
-    session.commit() 
+            if component_item and component_item.active:
+                new_link = Out2Comp(outid=outid, comid=comid_val, active=True)
+                session.add(new_link)
+    session.commit()
 
     active_component_links = session.exec(
         select(Out2Comp, Component)
@@ -265,8 +255,10 @@ async def update_outfit(
         .where(Out2Comp.outid == outid, Out2Comp.active == True, Component.active == True)
     ).all()
     outfit_to_update.totalcost = sum(link.Component.cost for link in active_component_links if link.Component)
-    
-    session.add(outfit_to_update); session.commit(); session.refresh(outfit_to_update)
+
+    session.add(outfit_to_update)
+    session.commit()
+    session.refresh(outfit_to_update)
 
     response = RedirectResponse(url=f"/outfits/{outfit_to_update.outid}", status_code=status.HTTP_303_SEE_OTHER)
     response.headers["HX-Redirect"] = f"/outfits/{outfit_to_update.outid}"
@@ -275,12 +267,18 @@ async def update_outfit(
 @router.delete("/api/outfits/{outid}")
 async def delete_outfit(outid: int, session: Session = Depends(get_session)):
     outfit_to_delete = session.get(Outfit, outid)
-    if not outfit_to_delete: 
+    if not outfit_to_delete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found")
-    outfit_to_delete.active = False; session.add(outfit_to_delete)
+
+    outfit_to_delete.active = False
+    session.add(outfit_to_delete)
+
     links_to_deactivate = session.exec(select(Out2Comp).where(Out2Comp.outid == outid)).all()
     for link in links_to_deactivate:
-        if link.active: link.active = False; session.add(link)
+        if link.active:
+            link.active = False
+            session.add(link)
+
     session.commit()
     response = HTMLResponse(content="", status_code=status.HTTP_204_NO_CONTENT)
     response.headers["HX-Redirect"] = "/outfits/"
@@ -290,24 +288,29 @@ async def delete_outfit(outid: int, session: Session = Depends(get_session)):
 async def get_available_components_for_outfit_form(
     request: Request,
     session: Session = Depends(get_session),
-    outid: Optional[str] = Query(None) 
+    outid: Optional[str] = Query(None)
 ):
     all_active_components = session.exec(select(Component).where(Component.active == True).order_by(Component.name)).all()
     current_component_ids = set()
+
     numeric_outid: Optional[int] = None
     if outid is not None and outid.strip().isdigit():
-        try: numeric_outid = int(outid.strip())
-        except ValueError: print(f"Warning: Could not convert outid='{outid}' to int."); numeric_outid = None
+        try:
+            numeric_outid = int(outid.strip())
+        except ValueError:
+            print(f"Warning: Could not convert outid='{outid}' to int for component list.")
+            numeric_outid = None
+
     if numeric_outid is not None:
         outfit_exists_check = session.get(Outfit, numeric_outid)
         if outfit_exists_check:
-            current_component_ids = { 
+            current_component_ids = {
                 link.comid for link in session.exec(
                     select(Out2Comp).where(Out2Comp.outid == numeric_outid, Out2Comp.active == True)
-                ).all() 
+                ).all()
             }
+
     return templates.TemplateResponse(
         "partials/component_checkboxes.html",
         {"request": request, "components": all_active_components, "current_component_ids": current_component_ids}
     )
-
