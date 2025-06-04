@@ -8,3 +8,7 @@
 /outfit_manager/routers/__pycache__
 /outfit_manager/routers/__pycache__
 /outfit_manager/services/__pycache__
+outfit_manager/models/__pycache__/__init__.cpython-313.pyc
+outfit_manager/routers/__pycache__/components.cpython-313.pyc
+outfit_manager/routers/__pycache__/outfits.cpython-313.pyc
+outfit_manager/services/__pycache__/template_service.cpython-313.pyc
