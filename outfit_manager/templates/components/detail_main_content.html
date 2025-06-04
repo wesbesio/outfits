@@ -1,0 +1,31 @@
+<!-- File: templates/components/detail_main_content.html -->
+<!-- Revision: 1.0 - Created missing main content template with page header and buttons -->
+
+<div class="page-header">
+    {% if edit_mode %}
+        <h2>{% if component %}Edit Component: {{ component.name }}{% else %}New Component{% endif %}</h2>
+    {% else %}
+        <h2>Component Details: {{ component.name if component else 'N/A' }}</h2>
+    {% endif %}
+    <div class="actions">
+        {% if not edit_mode and component %}
+            <a href="/components/{{ component.comid }}/edit" class="btn btn-outline" hx-get="/components/{{ component.comid }}/edit" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                Edit
+            </a>
+            <button class="btn btn-danger" hx-delete="/api/components/{{ component.comid }}" hx-confirm="Are you sure you want to delete this component? This action cannot be undone." hx-target="#main-content" hx-swap="innerHTML">
+                Delete
+            </button>
+        {% endif %}
+        <a href="/components/" class="btn btn-secondary" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            Back to List
+        </a>
+    </div>
+</div>
+
+<div id="component-detail-or-form-container" class="{% if not edit_mode and component %}card detail-card{% else %}card{% endif %}">
+    {% if edit_mode %}
+        {% include "forms/component_form_content.html" %}
+    {% else %}
+        {% include "components/detail_content.html" %}
+    {% endif %}
+</div>

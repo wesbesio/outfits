@@ -1,18 +1,37 @@
 # File: routers/components.py
-# Revision: 1.1 - Updated list_components_page for HX-Request header
+# Revision: 1.4 - Fixed form data type conversion for HTML forms (HTMX quirks resolution)
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from models import Component, Vendor, Piece, Outfit, Out2Comp
 from models.database import get_session
 from services.image_service import ImageService
+from services.template_service import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+
+# Helper function to convert dollars to cents for storage
+def dollars_to_cents(dollars: float) -> int:
+    """Convert dollars to cents for database storage."""
+    return int(round(dollars * 100))
+
+# Helper function to convert HTML form string to Optional[int]
+def form_int_or_none(value: str) -> Optional[int]:
+    """Convert HTML form string to int or None."""
+    if not value or not value.strip():
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+# Helper function to convert HTML checkbox to boolean
+def form_bool(value: Optional[str]) -> bool:
+    """Convert HTML checkbox value to boolean."""
+    return value is not None and value.lower() in ("true", "on", "1", "yes")
 
 # Dependency for common template context (used for forms and potentially detail views)
 async def get_form_template_context(request: Request, session: Session = Depends(get_session)):
@@ -23,18 +42,15 @@ async def get_form_template_context(request: Request, session: Session = Depends
 # --- HTML Page Endpoints ---
 
 @router.get("/components/", response_class=HTMLResponse)
-async def list_components_page(request: Request, session: Session = Depends(get_session)): # Added session
+async def list_components_page(request: Request, session: Session = Depends(get_session)):
     """HTML page to list components. Returns full page or content block based on HX-Request."""
-    # Context needed for the filter bar in both full page and partial content
     vendors = session.exec(select(Vendor).where(Vendor.active == True)).all()
     pieces = session.exec(select(Piece).where(Piece.active == True)).all()
     context = {"request": request, "vendors": vendors, "pieces": pieces}
 
     if request.headers.get("hx-request"):
-        # If it's an HTMX request, return only the main content block
         return templates.TemplateResponse("components/list_main_content.html", context)
     
-    # Otherwise, return the full page
     return templates.TemplateResponse("components/list.html", context)
 
 @router.get("/components/new", response_class=HTMLResponse)
@@ -47,23 +63,20 @@ async def create_component_page(request: Request, context: dict = Depends(get_fo
         "form_action": "/api/components/"
     }
     if request.headers.get("hx-request"):
-        return templates.TemplateResponse("forms/component_form_content.html", template_vars)
-    return templates.TemplateResponse("components/detail.html", template_vars) # components/detail.html acts as the form host
+        return templates.TemplateResponse("components/detail_main_content.html", template_vars)
+    return templates.TemplateResponse("components/detail.html", template_vars)
 
 @router.get("/components/{comid}", response_class=HTMLResponse)
 async def get_component_page(comid: int, request: Request, session: Session = Depends(get_session)):
     """HTML page to view a specific component. Handles HX-Request for partial updates."""
     component = session.get(Component, comid)
     if not component:
-        # For HTMX, we might want to return a specific error partial or an empty response with a 404
-        # For now, let FastAPI handle the 404, which HTMX can catch with responseError
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Component not found")
     
     template_vars = {"request": request, "component": component, "edit_mode": False}
     
     if request.headers.get("hx-request"):
-        # When loading component detail via HTMX into #main-content
-        return templates.TemplateResponse("components/detail_content.html", template_vars)
+        return templates.TemplateResponse("components/detail_main_content.html", template_vars)
     return templates.TemplateResponse("components/detail.html", template_vars)
 
 @router.get("/components/{comid}/edit", response_class=HTMLResponse)
@@ -80,8 +93,8 @@ async def edit_component_page(comid: int, request: Request, context: dict = Depe
         "form_action": f"/api/components/{comid}"
     }
     if request.headers.get("hx-request"):
-        return templates.TemplateResponse("forms/component_form_content.html", template_vars)
-    return templates.TemplateResponse("components/detail.html", template_vars) # components/detail.html acts as the form host
+        return templates.TemplateResponse("components/detail_main_content.html", template_vars)
+    return templates.TemplateResponse("components/detail.html", template_vars)
 
 
 # --- HTMX/API Endpoints (returning HTML fragments or JSON) ---
@@ -113,8 +126,6 @@ async def list_components_api(
         query = query.order_by(sort_field.asc())
         
     components = session.exec(query).all()
-    # Pass vendors and pieces to the list_content template if it uses partials that need them
-    # However, component_cards.html does not seem to need them directly.
     return templates.TemplateResponse(
         "components/list_content.html", {"request": request, "components": components}
     )
@@ -124,15 +135,22 @@ async def create_component(
     request: Request,
     session: Session = Depends(get_session),
     name: str = Form(...),
-    brand: Optional[str] = Form(None),
-    cost: int = Form(0), # Assuming cost is submitted as integer cents
-    description: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    vendorid: Optional[int] = Form(None),
-    pieceid: Optional[int] = Form(None),
+    brand: str = Form(""),
+    cost: float = Form(0.0),
+    description: str = Form(""),
+    notes: str = Form(""),
+    vendorid: str = Form(""),
+    pieceid: str = Form(""),
     image: Optional[UploadFile] = File(None)
 ):
     """API endpoint to create a new component."""
+    # Convert HTML form data to proper types
+    brand = brand.strip() or None
+    description = description.strip() or None
+    notes = notes.strip() or None
+    vendorid_int = form_int_or_none(vendorid)
+    pieceid_int = form_int_or_none(pieceid)
+    
     processed_image_bytes = None
     if image and image.filename:
         image_bytes = await image.read()
@@ -140,25 +158,24 @@ async def create_component(
         if processed_image_bytes is None:
             vendors = session.exec(select(Vendor).where(Vendor.active == True)).all()
             pieces = session.exec(select(Piece).where(Piece.active == True)).all()
-            # Re-render the form content with the error
             return templates.TemplateResponse(
-                "forms/component_form_content.html",
+                "components/detail_main_content.html",
                 {"request": request, "error": "Invalid or too large image file.",
-                 "component": Component(name=name, brand=brand, cost=cost, description=description, notes=notes, vendorid=vendorid, pieceid=pieceid),
-                 "vendors": vendors, "pieces": pieces, "form_action": "/api/components/"},
+                 "component": Component(name=name, brand=brand, cost=dollars_to_cents(cost), description=description, notes=notes, vendorid=vendorid_int, pieceid=pieceid_int),
+                 "vendors": vendors, "pieces": pieces, "form_action": "/api/components/", "edit_mode": True},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
+    cost_in_cents = dollars_to_cents(cost)
+    
     new_component = Component(
-        name=name, brand=brand, cost=cost, description=description,
-        notes=notes, vendorid=vendorid, pieceid=pieceid, image=processed_image_bytes
+        name=name, brand=brand, cost=cost_in_cents, description=description,
+        notes=notes, vendorid=vendorid_int, pieceid=pieceid_int, image=processed_image_bytes
     )
     session.add(new_component)
     session.commit()
     session.refresh(new_component)
 
-    # After successful creation, redirect to the new component's detail page
-    # HTMX will follow this redirect if HX-Redirect header is present.
     response = RedirectResponse(url=f"/components/{new_component.comid}", status_code=status.HTTP_303_SEE_OTHER)
     response.headers["HX-Redirect"] = f"/components/{new_component.comid}" 
     return response
@@ -170,27 +187,36 @@ async def update_component(
     request: Request,
     session: Session = Depends(get_session),
     name: str = Form(...),
-    brand: Optional[str] = Form(None),
-    cost: int = Form(0), # Assuming cost is submitted as integer cents
-    description: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    vendorid: Optional[int] = Form(None),
-    pieceid: Optional[int] = Form(None),
+    brand: str = Form(""),
+    cost: float = Form(0.0),
+    description: str = Form(""),
+    notes: str = Form(""),
+    vendorid: str = Form(""),
+    pieceid: str = Form(""),
     image: Optional[UploadFile] = File(None),
-    keep_existing_image: Optional[bool] = Form(False)
+    keep_existing_image: Optional[str] = Form(None)
 ):
-    """API endpoint to update an existing component."""
+    """API endpoint to update an existing component. FIXED: Proper HTML form data handling."""
+    
     component = session.get(Component, comid)
     if not component:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Component not found")
 
+    # Convert HTML form data to proper types
+    brand = brand.strip() or None
+    description = description.strip() or None
+    notes = notes.strip() or None
+    vendorid_int = form_int_or_none(vendorid)
+    pieceid_int = form_int_or_none(pieceid)
+    keep_image = form_bool(keep_existing_image)
+
     component.name = name
     component.brand = brand
-    component.cost = cost
+    component.cost = dollars_to_cents(cost)
     component.description = description
     component.notes = notes
-    component.vendorid = vendorid
-    component.pieceid = pieceid
+    component.vendorid = vendorid_int
+    component.pieceid = pieceid_int
 
     if image and image.filename:
         image_bytes = await image.read()
@@ -199,14 +225,14 @@ async def update_component(
             vendors = session.exec(select(Vendor).where(Vendor.active == True)).all()
             pieces = session.exec(select(Piece).where(Piece.active == True)).all()
             return templates.TemplateResponse(
-                "forms/component_form_content.html",
+                "components/detail_main_content.html",
                 {"request": request, "error": "Invalid or too large image file.",
                  "component": component, 
-                 "vendors": vendors, "pieces": pieces, "form_action": f"/api/components/{comid}"},
+                 "vendors": vendors, "pieces": pieces, "form_action": f"/api/components/{comid}", "edit_mode": True},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         component.image = processed_image_bytes
-    elif not keep_existing_image:
+    elif not keep_image:
         component.image = None
 
     session.add(component)
@@ -217,15 +243,11 @@ async def update_component(
     response.headers["HX-Redirect"] = f"/components/{component.comid}"
     return response
 
-@router.delete("/api/components/{comid}") # Removed default status_code for HTMX redirect
+@router.delete("/api/components/{comid}")
 async def delete_component(comid: int, session: Session = Depends(get_session)):
     """API endpoint to soft delete a component."""
     component_to_delete = session.get(Component, comid)
     if not component_to_delete:
-        # For HTMX, even on 404, if the client expects a redirect or specific handling,
-        # you might return a response that HTMX can use.
-        # However, raising an HTTP 404 is standard.
-        # If HX-Target is body, this will trigger htmx:responseError
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Component not found")
 
     component_to_delete.active = False
@@ -237,11 +259,7 @@ async def delete_component(comid: int, session: Session = Depends(get_session)):
         session.add(link)
     session.commit()
 
-    # For HTMX, to refresh the list page (assuming it's the target or pushed URL)
-    response = HTMLResponse(content="", status_code=status.HTTP_204_NO_CONTENT) # Standard for DELETE
-    # Tell HTMX to redirect to the components list page after successful deletion.
-    # This assumes the hx-target of the delete button was something like the body or #main-content
-    # and that a full page refresh/navigation is desired.
+    response = HTMLResponse(content="", status_code=status.HTTP_204_NO_CONTENT)
     response.headers["HX-Redirect"] = "/components/" 
     return response
 
@@ -272,8 +290,7 @@ async def get_outfits_using_component(comid: int, request: Request, session: Ses
     if outfits:
         return templates.TemplateResponse(
             "outfits/list_content.html", 
-            {"request": request, "outfits": outfits} # Reuses outfit_cards via outfits/list_content
+            {"request": request, "outfits": outfits}
         )
     else:
         return HTMLResponse("<p class='text-center text-secondary'>No active outfits found using this component.</p>")
-

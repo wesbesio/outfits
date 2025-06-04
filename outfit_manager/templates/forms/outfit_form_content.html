@@ -1,3 +1,6 @@
+<!-- File: templates/forms/outfit_form_content.html -->
+<!-- Revision: 1.2 - Fixed form context and component loading for new outfits -->
+
 <div id="outfit-form-container">
     <form {% if outfit and outfit.outid %}
               hx-put="{{ form_action }}"
@@ -17,22 +20,6 @@
         <div class="form-group">
             <label for="name">Outfit Name:</label>
             <input type="text" id="name" name="name" value="{{ outfit.name if outfit else '' }}" required>
-        </div>
-
-        <div class="form-group">
-            <label for="vendorid">Vendor (Optional):</label>
-            <select id="vendorid" name="vendorid">
-                <option value="">-- Select Vendor --</option>
-                {% if vendors %}
-                    {% for vendor_item in vendors %}
-                        <option value="{{ vendor_item.venid }}" {% if outfit and outfit.vendorid == vendor_item.venid %}selected{% endif %}>
-                            {{ vendor_item.name }}
-                        </option>
-                    {% endfor %}
-                {% else %}
-                    <option value="" disabled>No vendors available</option>
-                {% endif %}
-            </select>
         </div>
 
         <div class="form-group">
@@ -59,21 +46,26 @@
             {% endif %}
         </div>
 
-        <div class="form-group">
-            <label>Select Components for this Outfit:</label>
-            <div id="component-checkboxes-container"
-                 {% if outfit and outfit.outid %} 
+        {% if outfit and outfit.outid %}
+            <!-- For existing outfits, load component checkboxes via HTMX -->
+            <div class="form-group">
+                <label>Select Components for this Outfit:</label>
+                <div id="component-checkboxes-container"
                      hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
                      hx-trigger="load"
-                     hx-swap="innerHTML"
-                 {% endif %}>
-                {% if outfit and outfit.outid %}
+                     hx-swap="innerHTML">
                     <p class="text-secondary text-center">Loading components...</p>
-                {% else %}
-                    <p class="text-secondary text-center">Save the outfit to enable adding components.</p>
-                {% endif %}
+                </div>
             </div>
-        </div>
+        {% else %}
+            <!-- For new outfits, show a message that components can be added after creation -->
+            <div class="form-group">
+                <label>Components:</label>
+                <div class="info-box" style="padding: var(--spacing-md); background-color: var(--accent-color); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
+                    <p class="text-secondary text-center">💡 Save the outfit first, then you can add components by editing it.</p>
+                </div>
+            </div>
+        {% endif %}
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">

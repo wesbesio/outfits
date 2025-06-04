@@ -1,4 +1,6 @@
-<!-- Outfit detail content only -->
+<!-- File: templates/outfits/detail_content.html -->
+<!-- Revision: 1.2 - Removed vendor display from outfit details -->
+
 <div id="outfit-detail-or-form-container" class="card detail-card">
     {% if outfit %}
         <div class="detail-image-container mb-md">
@@ -9,8 +11,7 @@
             {% endif %}
         </div>
         <h3 class="card-title">{{ outfit.name }}</h3>
-        <p><strong>Total Cost:</strong> ${{ outfit.totalcost }}</p>
-        <p><strong>Vendor:</strong> {{ outfit.vendor.name if outfit.vendor else 'N/A' }}</p>
+        <p><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
         {% if outfit.description %}
             <p><strong>Description:</strong> {{ outfit.description }}</p>
         {% endif %}

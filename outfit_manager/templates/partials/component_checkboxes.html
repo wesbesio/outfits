@@ -1,3 +1,6 @@
+<!-- File: templates/partials/component_checkboxes.html -->
+<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+
 <div class="component-checkbox-grid">
     {% if components %}
         {% for component in components %}
@@ -6,7 +9,7 @@
                        name="component_ids"
                        value="{{ component.comid }}"
                        {% if current_component_ids and component.comid in current_component_ids %}checked{% endif %}>
-                {{ component.name }} ({{ component.brand if component.brand else 'N/A' }}) - ${{ component.cost }}
+                {{ component.name }} ({{ component.brand if component.brand else 'N/A' }}) - ${{ component.cost|cents_to_dollars }}
             </label>
         {% endfor %}
     {% else %}

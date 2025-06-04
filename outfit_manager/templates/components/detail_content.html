@@ -1,4 +1,6 @@
-<!-- Component detail content only -->
+<!-- File: templates/components/detail_content.html -->
+<!-- Revision: 1.1 - Fixed cost display to show dollars -->
+
 <div id="component-detail-or-form-container" class="card detail-card">
     {% if component %}
         <div class="detail-image-container mb-md">
@@ -10,7 +12,7 @@
         </div>
         <h3 class="card-title">{{ component.name }}</h3>
         <p><strong>Brand:</strong> {{ component.brand if component.brand else 'N/A' }}</p>
-        <p><strong>Cost:</strong> ${{ component.cost }}</p>
+        <p><strong>Cost:</strong> ${{ component.cost|cents_to_dollars }}</p>
         <p><strong>Vendor:</strong> {{ component.vendor.name if component.vendor else 'N/A' }}</p>
         <p><strong>Piece Type:</strong> {{ component.piece.name if component.piece else 'N/A' }}</p>
         {% if component.description %}
