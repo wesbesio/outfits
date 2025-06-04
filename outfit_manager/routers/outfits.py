@@ -1,5 +1,5 @@
 # File: routers/outfits.py
-# Revision: 1.18 - FIXED: Route order to prevent /outfits/new being caught by /outfits/
+# Revision: 1.19 - added score routes
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status, Query
 from fastapi.responses import HTMLResponse
@@ -140,6 +140,10 @@ async def list_outfits_api(
         outfit_item.totalcost = sum(link.Component.cost for link in active_components_links if link.Component)
     return templates.TemplateResponse("outfits/list_content.html", {"request": request, "outfits": outfits})
 
+# File: routers/outfits.py
+# These functions replace the existing create_outfit and update_outfit functions
+# Add the score parameter to both functions
+
 @router.post("/api/outfits/", response_class=HTMLResponse)
 async def create_outfit(
     request: Request,
@@ -147,6 +151,7 @@ async def create_outfit(
     name: str = Form(...),
     description: str = Form(""),
     notes: str = Form(""),
+    score: int = Form(0),  # NEW: Add score parameter
     image: Optional[UploadFile] = File(None)
 ):
     processed_image_bytes = None
@@ -155,6 +160,10 @@ async def create_outfit(
     # Convert form data
     description = description.strip() or None
     notes = notes.strip() or None
+    
+    # Ensure score is not negative
+    if score < 0:
+        score = 0
 
     if image and image.filename:
         image_bytes = await image.read()
@@ -165,7 +174,7 @@ async def create_outfit(
                     "request": request,
                     "components": form_render_context.get("all_active_components", []),
                     "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
-                    "outfit": Outfit(name=name, description=description, notes=notes),
+                    "outfit": Outfit(name=name, description=description, notes=notes, score=score),
                     "edit_mode": True,
                     "form_action": "/api/outfits/",
                     "current_component_ids": set(),
@@ -175,6 +184,7 @@ async def create_outfit(
 
     new_outfit = Outfit(
         name=name, description=description, notes=notes,
+        score=score,  # NEW: Include score field
         image=processed_image_bytes, totalcost=0
     )
     session.add(new_outfit)
@@ -194,6 +204,105 @@ async def create_outfit(
 
     response = templates.TemplateResponse("outfits/detail_main_content.html", success_render_context)
     response.headers["HX-Push-Url"] = f"/outfits/{new_outfit.outid}/edit"
+    return response
+
+@router.put("/api/outfits/{outid}", response_class=HTMLResponse)
+async def update_outfit(
+    outid: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    name: str = Form(...),
+    description: str = Form(""),
+    notes: str = Form(""),
+    score: int = Form(0),  # NEW: Add score parameter
+    image: Optional[UploadFile] = File(None),
+    keep_existing_image: Optional[str] = Form(None),
+    component_ids: List[int] = Form([])
+):
+    outfit_to_update = session.get(Outfit, outid)
+    if not outfit_to_update or not outfit_to_update.active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
+
+    # Convert form data
+    description = description.strip() or None
+    notes = notes.strip() or None
+    keep_image = keep_existing_image is not None and keep_existing_image.lower() in ("true", "on", "1", "yes")
+    
+    # Ensure score is not negative
+    if score < 0:
+        score = 0
+
+    outfit_to_update.name = name
+    outfit_to_update.description = description
+    outfit_to_update.notes = notes
+    outfit_to_update.score = score  # NEW: Update score field
+    
+    form_render_context = await get_outfit_form_context(request, session)
+
+    if image and image.filename:
+        image_bytes = await image.read()
+        if image_bytes:
+            processed_image_bytes = ImageService.validate_and_process_image(image_bytes, image.filename)
+            if processed_image_bytes is None:
+                error_context = {
+                    "request": request,
+                    "components": form_render_context.get("all_active_components", []),
+                    "error": "Invalid or too large image file. Max 5MB. Allowed: JPEG, PNG, WEBP, GIF.",
+                    "outfit": outfit_to_update,
+                    "edit_mode": True,
+                    "form_action": f"/api/outfits/{outid}",
+                    "current_component_ids": set(component_ids),
+                    "associated_components": []
+                }
+                return templates.TemplateResponse("outfits/detail_main_content.html", error_context, status_code=status.HTTP_400_BAD_REQUEST)
+            outfit_to_update.image = processed_image_bytes
+    elif not keep_image:
+        outfit_to_update.image = None
+
+    # Manage component associations (existing code unchanged)
+    existing_links = session.exec(select(Out2Comp).where(Out2Comp.outid == outid)).all()
+    existing_comids_in_db = {link.comid: link for link in existing_links}
+    selected_comids_from_form = set(component_ids)
+
+    for comid_val, link_obj in existing_comids_in_db.items():
+        if comid_val not in selected_comids_from_form:
+            if link_obj.active:
+                link_obj.active = False; session.add(link_obj)
+        else:
+            if not link_obj.active:
+                link_obj.active = True; session.add(link_obj)
+
+    for comid_val in selected_comids_from_form:
+        if comid_val not in existing_comids_in_db:
+            component_item = session.get(Component, comid_val)
+            if component_item and component_item.active:
+                new_link = Out2Comp(outid=outid, comid=comid_val, active=True)
+                session.add(new_link)
+    session.commit()
+
+    # Recalculate total cost based on currently active associated components
+    active_component_links = session.exec(
+        select(Out2Comp, Component)
+        .join(Component, Out2Comp.comid == Component.comid)
+        .where(Out2Comp.outid == outid, Out2Comp.active == True, Component.active == True)
+    ).all()
+    outfit_to_update.totalcost = sum(link.Component.cost for link in active_component_links if link.Component)
+
+    session.add(outfit_to_update)
+    session.commit()
+    session.refresh(outfit_to_update)
+
+    # After successful update, render the detail view of the outfit
+    final_associated_components = sorted([link.Component for link in active_component_links if link.Component], key=lambda c: c.name)
+    detail_view_context = {
+        "request": request,
+        "outfit": outfit_to_update,
+        "edit_mode": False,
+        "associated_components": final_associated_components
+    }
+    
+    response = templates.TemplateResponse("outfits/detail_main_content.html", detail_view_context)
+    response.headers["HX-Push-Url"] = f"/outfits/{outfit_to_update.outid}"
     return response
 
 @router.put("/api/outfits/{outid}", response_class=HTMLResponse)
@@ -338,3 +447,91 @@ async def get_available_components_for_outfit_form(
         "partials/component_checkboxes.html",
         {"request": request, "components": all_active_components, "current_component_ids": current_component_ids}
     )
+
+    # Add these routes to routers/outfits.py
+# Insert after the existing routes
+
+@router.post("/api/outfits/{outid}/score/increment", response_class=HTMLResponse)
+async def increment_outfit_score(
+    outid: int, 
+    request: Request, 
+    session: Session = Depends(get_session)
+):
+    """API endpoint to increment outfit score by 1."""
+    outfit = session.get(Outfit, outid)
+    if not outfit or not outfit.active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
+    
+    # Increment the score
+    outfit.score += 1
+    session.add(outfit)
+    session.commit()
+    session.refresh(outfit)
+    
+    # Return updated score display as HTML fragment
+    score_html = f"""
+    <div id="outfit-score-display" class="score-display">
+        <label><strong>Score:</strong></label>
+        <div class="score-controls">
+            <button class="btn btn-score-minus" 
+                    hx-post="/api/outfits/{outfit.outid}/score/decrement" 
+                    hx-target="#outfit-score-display" 
+                    hx-swap="outerHTML"
+                    {'disabled' if outfit.score <= 0 else ''}>
+                <span class="score-icon">−</span>
+            </button>
+            <span class="score-value">{outfit.score}</span>
+            <button class="btn btn-score-plus" 
+                    hx-post="/api/outfits/{outfit.outid}/score/increment" 
+                    hx-target="#outfit-score-display" 
+                    hx-swap="outerHTML">
+                <span class="score-icon">+</span>
+            </button>
+        </div>
+    </div>
+    """
+    
+    return HTMLResponse(content=score_html)
+
+@router.post("/api/outfits/{outid}/score/decrement", response_class=HTMLResponse)
+async def decrement_outfit_score(
+    outid: int, 
+    request: Request, 
+    session: Session = Depends(get_session)
+):
+    """API endpoint to decrement outfit score by 1, minimum 0."""
+    outfit = session.get(Outfit, outid)
+    if not outfit or not outfit.active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit not found or inactive")
+    
+    # Decrement the score, but don't go below 0
+    if outfit.score > 0:
+        outfit.score -= 1
+        session.add(outfit)
+        session.commit()
+        session.refresh(outfit)
+    
+    # Return updated score display as HTML fragment
+    score_html = f"""
+    <div id="outfit-score-display" class="score-display">
+        <label><strong>Score:</strong></label>
+        <div class="score-controls">
+            <button class="btn btn-score-minus" 
+                    hx-post="/api/outfits/{outfit.outid}/score/decrement" 
+                    hx-target="#outfit-score-display" 
+                    hx-swap="outerHTML"
+                    {'disabled' if outfit.score <= 0 else ''}>
+                <span class="score-icon">−</span>
+            </button>
+            <span class="score-value">{outfit.score}</span>
+            <button class="btn btn-score-plus" 
+                    hx-post="/api/outfits/{outfit.outid}/score/increment" 
+                    hx-target="#outfit-score-display" 
+                    hx-swap="outerHTML">
+                <span class="score-icon">+</span>
+            </button>
+        </div>
+    </div>
+    """
+    
+    return HTMLResponse(content=score_html)

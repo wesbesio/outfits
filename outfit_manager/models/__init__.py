@@ -1,5 +1,5 @@
 # File: models/__init__.py
-# Revision: 1.2 - Removed vendor field from Outfit model
+# Revision: 1.3 - Added score field to Outfit model
 
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
@@ -51,6 +51,7 @@ class Outfit(SQLModel, table=True):
     description: Optional[str] = Field(default=None, max_length=1000)
     notes: Optional[str] = Field(default=None, max_length=1000)
     totalcost: int = Field(default=0)  # Total cost in cents
+    score: int = Field(default=0)  # NEW: Outfit score field (default 0)
     # REMOVED: vendorid field and vendor relationship
     image: Optional[bytes] = Field(default=None)  # BLOB storage
     active: bool = Field(default=True)

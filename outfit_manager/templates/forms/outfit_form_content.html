@@ -1,5 +1,5 @@
 <!-- File: templates/forms/outfit_form_content.html -->
-<!-- Revision: 1.2 - Fixed form context and component loading for new outfits -->
+<!-- Revision: 1.3 - Added score field to outfit form -->
 
 <div id="outfit-form-container">
     <form {% if outfit and outfit.outid %}
@@ -32,6 +32,18 @@
             <textarea id="notes" name="notes" rows="3">{{ outfit.notes if outfit else '' }}</textarea>
         </div>
 
+        <!-- NEW: Score field for manual editing -->
+        <div class="form-group">
+            <label for="score">Score:</label>
+            <input type="number" id="score" name="score" 
+                   value="{{ outfit.score if outfit else 0 }}" 
+                   min="0" step="1" 
+                   style="max-width: 200px;">
+            <small class="form-text" style="color: var(--text-secondary); font-size: 0.85em; margin-top: var(--spacing-xs); display: block;">
+                💡 You can also use the +/− buttons in the detail view to adjust the score.
+            </small>
+        </div>
+
         <div class="form-group">
             <label for="outfit-image-upload">Image (Max 5MB, JPEG/PNG/WEBP/GIF):</label>
             <input type="file" id="outfit-image-upload" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="form-control">
@@ -47,18 +59,21 @@
         </div>
 
         {% if outfit and outfit.outid %}
-            <!-- For existing outfits, load component checkboxes via HTMX -->
+            <!-- EXISTING OUTFIT: Load component checkboxes via HTMX -->
             <div class="form-group">
                 <label>Select Components for this Outfit:</label>
-                <div id="component-checkboxes-container"
-                     hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                    <p class="text-secondary text-center">Loading components...</p>
+                <div id="component-checkboxes-container">
+                    <button type="button" 
+                            class="btn btn-outline"
+                            hx-get="/api/outfits/components_list?outid={{ outfit.outid }}"
+                            hx-target="#component-checkboxes-container"
+                            hx-swap="innerHTML">
+                        Load Components
+                    </button>
                 </div>
             </div>
         {% else %}
-            <!-- For new outfits, show a message that components can be added after creation -->
+            <!-- NEW OUTFIT: Show helpful message -->
             <div class="form-group">
                 <label>Components:</label>
                 <div class="info-box" style="padding: var(--spacing-md); background-color: var(--accent-color); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">

@@ -1,5 +1,5 @@
 <!-- File: templates/partials/outfit_cards.html -->
-<!-- Revision: 1.2 - Removed vendor display from outfit cards -->
+<!-- Revision: 1.3 - Added score display to outfit cards -->
 
 <div class="card" hx-get="/outfits/{{ outfit.outid }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
     {% if outfit.image %}
@@ -9,4 +9,53 @@
     {% endif %}
     <h3 class="card-title">{{ outfit.name }}</h3>
     <p class="card-text"><strong>Total Cost:</strong> ${{ outfit.totalcost|cents_to_dollars }}</p>
+    
+    <!-- NEW: Score display with visual indicator -->
+    <div class="card-score-display">
+        <span class="score-label">Score:</span>
+        <span class="score-badge {% if outfit.score >= 5 %}score-high{% elif outfit.score >= 3 %}score-medium{% else %}score-low{% endif %}">
+            {{ outfit.score }}
+        </span>
+    </div>
 </div>
+
+<style>
+    .card-score-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--spacing-sm);
+        padding: var(--spacing-xs) 0;
+    }
+    
+    .score-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.9em;
+    }
+    
+    .score-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 24px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 0.85em;
+        color: white;
+        padding: 0 var(--spacing-xs);
+    }
+    
+    .score-low {
+        background-color: #94A3B8; /* Gray for low scores (0-2) */
+    }
+    
+    .score-medium {
+        background-color: var(--secondary-color); /* Pink for medium scores (3-4) */
+    }
+    
+    .score-high {
+        background-color: var(--primary-color); /* Purple for high scores (5+) */
+    }
+</style>
