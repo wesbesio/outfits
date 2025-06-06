@@ -1,1 +1,17 @@
-<!-- Vendor form full page -->
+<!-- File: templates/forms/vendor_form.html -->
+<!-- Revision: 1.0 - Vendor form full page -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{% if vendor %}Edit Vendor{% else %}New Vendor{% endif %}</h2>
+    <a href="/vendors/" class="btn btn-secondary" hx-get="/vendors/" hx-target="#main-content" hx-swap="innerHTML">
+        Back to List
+    </a>
+</div>
+
+<div id="vendor-form-container" class="card">
+    {% include "forms/vendor_form_content.html" %}
+</div>
+{% endblock %}

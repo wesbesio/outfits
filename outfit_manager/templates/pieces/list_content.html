@@ -1,0 +1,39 @@
+<!-- File: templates/pieces/list_content.html -->
+<!-- Revision: 1.0 - Piece list content with no results messaging -->
+
+<div id="piece-list-container" class="card-grid">
+    {% if pieces %}
+        {% for piece in pieces %}
+            {% include "partials/piece_cards.html" with context %}
+        {% endfor %}
+    {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; background: rgba(255, 255, 255, 0.8); border-radius: var(--border-radius-md); border: 1px solid var(--border-color);">
+            <div style="color: var(--text-secondary); font-size: 1.1em; margin-bottom: 1rem;">
+                🧩 No piece types found
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+                {% if request.query_params.get('q') %}
+                    No piece types match your search for "<strong>{{ request.query_params.get('q') }}</strong>".
+                {% else %}
+                    You haven't added any piece types yet.
+                {% endif %}
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                {% if request.query_params.get('q') %}
+                    <button onclick="document.querySelector('#search-input').value = ''; document.querySelectorAll('select').forEach(s => s.selectedIndex = 0); document.querySelector('form').requestSubmit();" 
+                            style="background: var(--primary-color); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--border-radius-sm); cursor: pointer; transition: background-color 0.3s ease;">
+                        Clear Search
+                    </button>
+                {% endif %}
+                <a href="/pieces/new" 
+                   class="btn btn-primary" 
+                   hx-get="/pieces/new" 
+                   hx-target="#main-content" 
+                   hx-swap="innerHTML"
+                   style="text-decoration: none; background: var(--secondary-color); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--border-radius-sm); cursor: pointer; transition: background-color 0.3s ease;">
+                    Add Your First Piece Type
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>

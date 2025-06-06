@@ -1,0 +1,45 @@
+<!-- File: templates/partials/vendor_cards.html -->
+<!-- Revision: 1.0 - Vendor card component with store icons -->
+
+<div class="card" hx-get="/vendors/{{ vendor.venid }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <div class="card-icon" style="text-align: center; font-size: 3rem; margin-bottom: var(--spacing-md); color: var(--primary-color);">
+        🏪
+    </div>
+    <h3 class="card-title">{{ vendor.name }}</h3>
+    {% if vendor.description %}
+        <p class="card-text">{{ vendor.description }}</p>
+    {% else %}
+        <p class="card-text text-secondary">No description provided</p>
+    {% endif %}
+    
+    <div class="card-status" style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--spacing-sm); padding-top: var(--spacing-xs); border-top: 1px solid var(--accent-color);">
+        <span class="badge {{ 'active' if vendor.active else 'inactive' }}">
+            {{ 'Active' if vendor.active else 'Inactive' }}
+        </span>
+        {% if vendor.flag %}
+            <span style="font-size: 1.2em;" title="Flagged for attention">🚩</span>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .card-icon {
+        user-select: none;
+        pointer-events: none;
+    }
+    
+    .card-status {
+        font-size: 0.9em;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        border-radius: var(--border-radius-sm);
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+    }
+    .badge.active { background-color: #28a745; } /* Green */
+    .badge.inactive { background-color: #6c757d; } /* Gray */
+</style>

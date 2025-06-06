@@ -1,6 +1,31 @@
-<!-- Vendor options partial -->
+<!-- File: templates/partials/vendor_options.html -->
+<!-- Revision: 1.1 - Enhanced with "Manage Vendors" link integration -->
+
 {% for vendor in vendors %}
     <option value="{{ vendor.venid }}" {% if current_vendor_id and current_vendor_id == vendor.venid %}selected{% endif %}>
         {{ vendor.name }}
     </option>
 {% endfor %}
+
+<!-- Management option -->
+<option value="" disabled style="border-top: 1px solid #ddd; margin-top: 4px; padding-top: 4px; font-style: italic; color: #666;">
+    ━━━━━━━━━━━━━━━━━━━━
+</option>
+<option value="manage" data-action="manage" style="font-weight: bold; color: var(--primary-color);">
+    🏪 Manage Vendors...
+</option>
+
+<script>
+// Handle "Manage Vendors" selection
+document.addEventListener('change', function(e) {
+    if (e.target.tagName === 'SELECT' && e.target.name === 'vendorid') {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.getAttribute('data-action') === 'manage') {
+            // Navigate to vendor management
+            htmx.ajax('GET', '/vendors/', {target: '#main-content', swap: 'innerHTML'});
+            // Reset the select to empty value
+            e.target.value = '';
+        }
+    }
+});
+</script>

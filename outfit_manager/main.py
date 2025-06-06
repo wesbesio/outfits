@@ -1,5 +1,5 @@
 # File: main.py
-# Revision: 2.0 - Added Vendor Router
+# Revision: 3.0 - Added Pieces Router
 
 from fastapi import FastAPI, Request, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,7 +10,7 @@ from sqlmodel import Session
 from models.database import create_db_and_tables, engine, get_session
 from services.seed_data import seed_initial_data
 # Import routers
-from routers import components, images, outfits, vendors
+from routers import components, images, outfits, vendors, pieces
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -48,10 +48,7 @@ app.include_router(components.router, tags=["Components"])
 app.include_router(images.router, tags=["Images"])
 app.include_router(outfits.router, tags=["Outfits"])
 app.include_router(vendors.router, tags=["Vendors"])
-
-# Placeholder for other router includes (pieces)
-# from routers import pieces 
-# app.include_router(pieces.router, prefix="/pieces", tags=["Pieces"])
+app.include_router(pieces.router, tags=["Pieces"])
 
 if __name__ == "__main__":
     import uvicorn

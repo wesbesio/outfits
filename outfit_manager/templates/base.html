@@ -1,6 +1,5 @@
-<!-- HTML--->
-<!-- File: outfit_manager/templates/base.html--->
-<!--Revision: 4.3 - with htmx config logger--->
+<!-- File: templates/base.html -->
+<!-- Revision: 5.0 - Added hamburger menu with white ☰ icon -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -20,7 +19,29 @@
         <nav class="header-nav">
             <a href="/components/" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">Components</a>
             <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">Outfits</a>
-            </nav>
+            
+            <!-- Hamburger Menu -->
+            <div class="hamburger-menu">
+                <button class="hamburger-button" onclick="toggleHamburgerMenu()">
+                    <span class="hamburger-icon">☰</span>
+                </button>
+                <div class="hamburger-dropdown" id="hamburger-dropdown">
+                    <a href="/vendors/" hx-get="/vendors/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                        <span>🏪</span> Manage Vendors
+                    </a>
+                    <a href="/pieces/" hx-get="/pieces/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                        <span>🧩</span> Manage Piece Types
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="/components/" hx-get="/components/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                        <span>👕</span> All Components
+                    </a>
+                    <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+                        <span>👔</span> All Outfits
+                    </a>
+                </div>
+            </div>
+        </nav>
     </header>
     
     <div id="global-error-toast" class="error-toast" style="display: none;">
@@ -39,9 +60,36 @@
         <a href="/outfits/" hx-get="/outfits/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
             <span>👔</span> Outfits
         </a>
-        </nav>
+        <a href="/vendors/" hx-get="/vendors/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            <span>🏪</span> Vendors
+        </a>
+        <a href="/pieces/" hx-get="/pieces/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            <span>🧩</span> Pieces
+        </a>
+    </nav>
 
     <script>
+        // Hamburger menu functionality
+        function toggleHamburgerMenu() {
+            const dropdown = document.getElementById('hamburger-dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Close hamburger menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const hamburgerMenu = document.querySelector('.hamburger-menu');
+            const dropdown = document.getElementById('hamburger-dropdown');
+            
+            if (!hamburgerMenu.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Close hamburger menu when navigating
+        document.body.addEventListener('htmx:beforeRequest', function() {
+            document.getElementById('hamburger-dropdown').style.display = 'none';
+        });
+        
         // HTMX Request Configuration Logger
         document.body.addEventListener('htmx:configRequest', function(evt) {
             console.log("HTMX Request Configuration Details:", evt.detail);
@@ -65,9 +113,6 @@
     
         document.body.addEventListener('htmx:beforeSwap', function(evt) {
             console.log("HTMX Before Swap for target:", evt.detail.target.id, "URL:", evt.detail.xhr.responseURL);
-            // Be cautious logging evt.detail.xhr.responseText here if it's very long,
-            // but for debugging, you might log a snippet or its length.
-            // console.log("Swap content snippet:", evt.detail.xhr.responseText.substring(0, 200));
         });
     
         document.body.addEventListener('htmx:afterSwap', function(evt) {
@@ -92,4 +137,3 @@
     </script>
 </body>
 </html>
-

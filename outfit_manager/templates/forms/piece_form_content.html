@@ -1,8 +1,8 @@
-<!-- File: templates/forms/vendor_form_content.html -->
-<!-- Revision: 1.0 - Vendor form content template -->
+<!-- File: templates/forms/piece_form_content.html -->
+<!-- Revision: 1.0 - Piece form content template -->
 
-<div id="vendor-form-container">
-    <form {% if vendor %}
+<div id="piece-form-container">
+    <form {% if piece %}
               hx-put="{{ form_action }}"
           {% else %}
               hx-post="{{ form_action }}"
@@ -17,38 +17,29 @@
         {% endif %}
 
         <div class="form-group">
-            <label for="name">Vendor Name:</label>
-            <input type="text" id="name" name="name" value="{{ vendor.name if vendor else '' }}" required>
+            <label for="name">Piece Type Name:</label>
+            <input type="text" id="name" name="name" value="{{ piece.name if piece else '' }}" required>
         </div>
 
         <div class="form-group">
             <label for="description">Description (Optional):</label>
-            <textarea id="description" name="description" rows="3">{{ vendor.description if vendor else '' }}</textarea>
+            <textarea id="description" name="description" rows="3">{{ piece.description if piece else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
                 <input type="checkbox" name="active" value="true" 
-                       {% if not vendor or vendor.active %}checked{% endif %}
+                       {% if not piece or piece.active %}checked{% endif %}
                        style="width: auto; height: auto;">
                 Active (visible in component forms)
             </label>
         </div>
 
-        <div class="form-group">
-            <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
-                <input type="checkbox" name="flag" value="true" 
-                       {% if vendor and vendor.flag %}checked{% endif %}
-                       style="width: auto; height: auto;">
-                Flag for attention 🚩
-            </label>
-        </div>
-
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
-                {% if vendor %}Update Vendor{% else %}Create Vendor{% endif %}
+                {% if piece %}Update Piece Type{% else %}Create Piece Type{% endif %}
             </button>
-            <a href="/vendors/" class="btn btn-outline" hx-get="/vendors/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+            <a href="/pieces/" class="btn btn-outline" hx-get="/pieces/" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
                 Cancel
             </a>
         </div>

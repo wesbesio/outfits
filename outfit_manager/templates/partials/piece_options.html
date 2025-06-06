@@ -1,6 +1,31 @@
-<!-- Piece options partial -->
+<!-- File: templates/partials/piece_options.html -->
+<!-- Revision: 1.1 - Enhanced with "Manage Piece Types" link integration -->
+
 {% for piece in pieces %}
     <option value="{{ piece.piecid }}" {% if current_piece_id and current_piece_id == piece.piecid %}selected{% endif %}>
         {{ piece.name }}
     </option>
 {% endfor %}
+
+<!-- Management option -->
+<option value="" disabled style="border-top: 1px solid #ddd; margin-top: 4px; padding-top: 4px; font-style: italic; color: #666;">
+    ━━━━━━━━━━━━━━━━━━━━
+</option>
+<option value="manage" data-action="manage" style="font-weight: bold; color: var(--primary-color);">
+    🧩 Manage Piece Types...
+</option>
+
+<script>
+// Handle "Manage Piece Types" selection
+document.addEventListener('change', function(e) {
+    if (e.target.tagName === 'SELECT' && e.target.name === 'pieceid') {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.getAttribute('data-action') === 'manage') {
+            // Navigate to piece management
+            htmx.ajax('GET', '/pieces/', {target: '#main-content', swap: 'innerHTML'});
+            // Reset the select to empty value
+            e.target.value = '';
+        }
+    }
+});
+</script>
