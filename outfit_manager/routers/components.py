@@ -1,5 +1,5 @@
 # File: routers/components.py
-# Revision: 1.4 - Fixed form data type conversion for HTML forms (HTMX quirks resolution)
+# Revision: 1.5 - Fixed search parameter handling and added error handling for better UX
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -32,6 +32,16 @@ def form_int_or_none(value: str) -> Optional[int]:
 def form_bool(value: Optional[str]) -> bool:
     """Convert HTML checkbox value to boolean."""
     return value is not None and value.lower() in ("true", "on", "1", "yes")
+
+# NEW: Safe parameter conversion for search filters
+def safe_int_conversion(value: Optional[str]) -> Optional[int]:
+    """Safely convert string to int, returning None for empty/invalid values."""
+    if not value or not value.strip():
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 # Dependency for common template context (used for forms and potentially detail views)
 async def get_form_template_context(request: Request, session: Session = Depends(get_session)):
@@ -104,31 +114,62 @@ async def list_components_api(
     request: Request,
     session: Session = Depends(get_session),
     q: Optional[str] = None,
-    vendorid: Optional[int] = None,
-    pieceid: Optional[int] = None,
+    vendorid: Optional[str] = None,  # FIXED: Changed from Optional[int] to Optional[str]
+    pieceid: Optional[str] = None,   # FIXED: Changed from Optional[int] to Optional[str]
     sort_by: Optional[str] = "name",
     sort_order: Optional[str] = "asc"
 ):
-    """API endpoint to list components (HTMX fragment for the card grid)."""
-    query = select(Component).where(Component.active == True)
-
-    if q:
-        query = query.where(Component.name.ilike(f"%{q}%") | Component.description.ilike(f"%{q}%") | Component.brand.ilike(f"%{q}%"))
-    if vendorid:
-        query = query.where(Component.vendorid == vendorid)
-    if pieceid:
-        query = query.where(Component.pieceid == pieceid)
-
-    sort_field = getattr(Component, sort_by, Component.name)
-    if sort_order == "desc":
-        query = query.order_by(sort_field.desc())
-    else:
-        query = query.order_by(sort_field.asc())
+    """API endpoint to list components (HTMX fragment for the card grid). FIXED: Proper parameter handling."""
+    
+    try:
+        # FIXED: Safely convert string parameters to integers
+        vendorid_int = safe_int_conversion(vendorid)
+        pieceid_int = safe_int_conversion(pieceid)
         
-    components = session.exec(query).all()
-    return templates.TemplateResponse(
-        "components/list_content.html", {"request": request, "components": components}
-    )
+        # Build query with proper error handling
+        query = select(Component).where(Component.active == True)
+
+        # Apply filters with converted parameters
+        if q:
+            query = query.where(Component.name.ilike(f"%{q}%") | Component.description.ilike(f"%{q}%") | Component.brand.ilike(f"%{q}%"))
+        if vendorid_int:
+            query = query.where(Component.vendorid == vendorid_int)
+        if pieceid_int:
+            query = query.where(Component.pieceid == pieceid_int)
+
+        # Handle sorting with fallback to name if invalid sort_by
+        valid_sort_fields = ['name', 'cost', 'brand']
+        if sort_by not in valid_sort_fields:
+            sort_by = 'name'
+            
+        sort_field = getattr(Component, sort_by, Component.name)
+        if sort_order == "desc":
+            query = query.order_by(sort_field.desc())
+        else:
+            query = query.order_by(sort_field.asc())
+            
+        # Execute query with error handling
+        components = session.exec(query).all()
+        
+        # Return template response
+        return templates.TemplateResponse(
+            "components/list_content.html", {"request": request, "components": components}
+        )
+        
+    except Exception as e:
+        # FIXED: Proper error handling instead of letting exceptions bubble up
+        print(f"Error in list_components_api: {e}")  # Log for debugging
+        
+        # Return user-friendly error message
+        error_html = f"""
+        <div id="component-list-container" class="card-grid">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <p>Sorry, there was an error loading components.</p>
+                <p style="font-size: 0.9em;">Please try refreshing the page or contact support if the problem persists.</p>
+            </div>
+        </div>
+        """
+        return HTMLResponse(content=error_html, status_code=200)  # Return 200 to avoid HTMX error handling
 
 @router.post("/api/components/", response_class=HTMLResponse)
 async def create_component(

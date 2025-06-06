@@ -1,5 +1,5 @@
 # File: routers/outfits.py
-# Revision: 1.20 - Removed score label from increment/decrement endpoints
+# Revision: 1.21 - Fixed search error handling and improved UX for no results found
 
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, status, Query
 from fastapi.responses import HTMLResponse
@@ -120,25 +120,56 @@ async def list_outfits_api(
     sort_by: Optional[str] = "name",
     sort_order: Optional[str] = "asc"
 ):
-    query = select(Outfit).where(Outfit.active == True)
-    if q:
-        query = query.where(Outfit.name.ilike(f"%{q}%") | Outfit.description.ilike(f"%{q}%"))
+    """API endpoint to list outfits with FIXED error handling for better search UX."""
+    
+    try:
+        # Build query with proper error handling
+        query = select(Outfit).where(Outfit.active == True)
+        
+        # Apply search filter if provided
+        if q:
+            query = query.where(Outfit.name.ilike(f"%{q}%") | Outfit.description.ilike(f"%{q}%"))
 
-    sort_field = getattr(Outfit, sort_by, Outfit.name)
-    if sort_order == "desc":
-        query = query.order_by(sort_field.desc())
-    else:
-        query = query.order_by(sort_field.asc())
-    outfits = session.exec(query).all()
+        # Handle sorting with fallback to name if invalid sort_by
+        valid_sort_fields = ['name', 'totalcost', 'score']
+        if sort_by not in valid_sort_fields:
+            sort_by = 'name'
+            
+        sort_field = getattr(Outfit, sort_by, Outfit.name)
+        if sort_order == "desc":
+            query = query.order_by(sort_field.desc())
+        else:
+            query = query.order_by(sort_field.asc())
+            
+        # Execute query with error handling
+        outfits = session.exec(query).all()
 
-    for outfit_item in outfits:
-        active_components_links = session.exec(
-            select(Out2Comp, Component)
-            .join(Component, Out2Comp.comid == Component.comid)
-            .where(Out2Comp.outid == outfit_item.outid, Out2Comp.active == True, Component.active == True)
-        ).all()
-        outfit_item.totalcost = sum(link.Component.cost for link in active_components_links if link.Component)
-    return templates.TemplateResponse("outfits/list_content.html", {"request": request, "outfits": outfits})
+        # Calculate total costs for each outfit
+        for outfit_item in outfits:
+            active_components_links = session.exec(
+                select(Out2Comp, Component)
+                .join(Component, Out2Comp.comid == Component.comid)
+                .where(Out2Comp.outid == outfit_item.outid, Out2Comp.active == True, Component.active == True)
+            ).all()
+            outfit_item.totalcost = sum(link.Component.cost for link in active_components_links if link.Component)
+            
+        # Return template response
+        return templates.TemplateResponse("outfits/list_content.html", {"request": request, "outfits": outfits})
+        
+    except Exception as e:
+        # FIXED: Proper error handling instead of letting exceptions bubble up
+        print(f"Error in list_outfits_api: {e}")  # Log for debugging
+        
+        # Return user-friendly error message
+        error_html = f"""
+        <div id="outfit-list-container" class="card-grid">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <p>Sorry, there was an error loading outfits.</p>
+                <p style="font-size: 0.9em;">Please try refreshing the page or contact support if the problem persists.</p>
+            </div>
+        </div>
+        """
+        return HTMLResponse(content=error_html, status_code=200)  # Return 200 to avoid HTMX error handling
 
 @router.post("/api/outfits/", response_class=HTMLResponse)
 async def create_outfit(
