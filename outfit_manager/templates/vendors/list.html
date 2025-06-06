@@ -1,0 +1,36 @@
+<!-- File: templates/vendors/list.html -->
+<!-- Revision: 1.0 - Vendor list full page -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Vendors</h2>
+    <a href="/vendors/new" class="btn btn-primary" hx-get="/vendors/new" hx-target="#main-content" hx-swap="innerHTML">
+        Add New Vendor
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/vendors/" hx-target="#vendor-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input, change from:select">
+        <input type="search" name="q" id="search-input" placeholder="Search vendors..." class="form-control">
+        <select name="sort_by" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="description">Sort by Description</option>
+        </select>
+        <select name="sort_order" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        <label style="display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+            <input type="checkbox" name="show_inactive" value="true" style="width: auto;">
+            Show Inactive
+        </label>
+    </form>
+</div>
+
+<div id="vendor-list-container" hx-get="/api/vendors/" hx-trigger="load" hx-swap="outerHTML">
+    {% include "vendors/list_content.html" %}
+</div>
+
+{% endblock %}

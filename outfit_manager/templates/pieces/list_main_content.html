@@ -1,0 +1,35 @@
+<!-- File: templates/pieces/list_main_content.html -->
+<!-- Revision: 1.0 - Piece list main content for HTMX -->
+
+<div class="page-header">
+    <h2>Piece Types</h2>
+    <a href="/pieces/new" 
+       class="btn btn-primary" 
+       hx-get="/pieces/new" 
+       hx-target="#main-content" 
+       hx-swap="innerHTML">
+        Add New Piece Type
+    </a>
+</div>
+
+<div class="filter-sort-bar mb-lg">
+    <form hx-get="/api/pieces/" hx-target="#piece-list-container" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:500ms from:#search-input, change from:select">
+        <input type="search" name="q" id="search-input" placeholder="Search piece types..." class="form-control">
+        <select name="sort_by" class="form-control">
+            <option value="name">Sort by Name</option>
+            <option value="description">Sort by Description</option>
+        </select>
+        <select name="sort_order" class="form-control">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        <label style="display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+            <input type="checkbox" name="show_inactive" value="true" style="width: auto;">
+            Show Inactive
+        </label>
+    </form>
+</div>
+
+<div id="piece-list-container" hx-get="/api/pieces/" hx-trigger="load" hx-swap="outerHTML">
+    <p class="text-center text-secondary">Loading piece types...</p>
+</div>

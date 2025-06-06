@@ -1,0 +1,45 @@
+<!-- File: templates/vendors/detail_content.html -->
+<!-- Revision: 1.0 - Vendor detail content -->
+
+<div id="vendor-detail-container" class="card detail-card">
+    {% if vendor %}
+        <h3 class="card-title">{{ vendor.name }}</h3>
+        {% if vendor.description %}
+            <p><strong>Description:</strong> {{ vendor.description }}</p>
+        {% endif %}
+        <p><strong>Status:</strong> <span class="badge {{ 'active' if vendor.active else 'inactive' }}">{{ 'Active' if vendor.active else 'Inactive' }}</span></p>
+        {% if vendor.flag %}
+            <p><strong>Flagged:</strong> Yes</p>
+        {% endif %}
+
+        <hr class="my-lg">
+
+        <div class="related-components">
+            <h4>Components from this Vendor</h4>
+            <div id="vendor-components-list" hx-get="/api/vendors/{{ vendor.venid }}/components" hx-trigger="load" hx-swap="innerHTML">
+                <p class="text-secondary text-center">Loading components from this vendor...</p>
+            </div>
+        </div>
+
+    {% else %}
+        <p class="text-center text-secondary">Vendor not found.</p>
+    {% endif %}
+</div>
+
+<style>
+    .detail-card {
+        padding: var(--spacing-xxl);
+        max-width: 800px;
+        margin: auto;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        border-radius: var(--border-radius-sm);
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+    }
+    .badge.active { background-color: #28a745; } /* Green */
+    .badge.inactive { background-color: #6c757d; } /* Gray */
+</style>

@@ -1,5 +1,5 @@
 # File: main.py
-# Revision: 1.5 - Removed Stats Router
+# Revision: 2.0 - Added Vendor Router
 
 from fastapi import FastAPI, Request, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,7 +10,7 @@ from sqlmodel import Session
 from models.database import create_db_and_tables, engine, get_session
 from services.seed_data import seed_initial_data
 # Import routers
-from routers import components, images, outfits # Removed stats import
+from routers import components, images, outfits, vendors
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -47,11 +47,10 @@ async def read_root(request: Request, session: Session = Depends(get_session)):
 app.include_router(components.router, tags=["Components"])
 app.include_router(images.router, tags=["Images"])
 app.include_router(outfits.router, tags=["Outfits"])
-# app.include_router(stats.router, prefix="/stats", tags=["Statistics"]) # Removed stats router
+app.include_router(vendors.router, tags=["Vendors"])
 
-# Placeholder for other router includes (vendors, pieces)
-# from routers import vendors, pieces 
-# app.include_router(vendors.router, prefix="/vendors", tags=["Vendors"])
+# Placeholder for other router includes (pieces)
+# from routers import pieces 
 # app.include_router(pieces.router, prefix="/pieces", tags=["Pieces"])
 
 if __name__ == "__main__":

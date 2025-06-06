@@ -1,0 +1,42 @@
+<!-- File: templates/pieces/detail_content.html -->
+<!-- Revision: 1.0 - Piece detail content -->
+
+<div id="piece-detail-container" class="card detail-card">
+    {% if piece %}
+        <h3 class="card-title">{{ piece.name }}</h3>
+        {% if piece.description %}
+            <p><strong>Description:</strong> {{ piece.description }}</p>
+        {% endif %}
+        <p><strong>Status:</strong> <span class="badge {{ 'active' if piece.active else 'inactive' }}">{{ 'Active' if piece.active else 'Inactive' }}</span></p>
+
+        <hr class="my-lg">
+
+        <div class="related-components">
+            <h4>Components of this Type</h4>
+            <div id="piece-components-list" hx-get="/api/pieces/{{ piece.piecid }}/components" hx-trigger="load" hx-swap="innerHTML">
+                <p class="text-secondary text-center">Loading components of this type...</p>
+            </div>
+        </div>
+
+    {% else %}
+        <p class="text-center text-secondary">Piece type not found.</p>
+    {% endif %}
+</div>
+
+<style>
+    .detail-card {
+        padding: var(--spacing-xxl);
+        max-width: 800px;
+        margin: auto;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        border-radius: var(--border-radius-sm);
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+    }
+    .badge.active { background-color: #28a745; } /* Green */
+    .badge.inactive { background-color: #6c757d; } /* Gray */
+</style>
